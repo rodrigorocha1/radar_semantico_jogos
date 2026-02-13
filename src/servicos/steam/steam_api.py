@@ -1,9 +1,10 @@
 import subprocess
-from typing import List, Final
+from typing import Final
 
-from src.servicos.steam.iapi_steam import IAPISteam
 from src.servicos.config.config import Config
 from src.servicos.config.configuracao_log import logger
+from src.servicos.steam.iapi_steam import IAPISteam
+
 
 # adicionar log
 
@@ -31,14 +32,35 @@ class SteamAPI(IAPISteam):
             logger.info('Falha ao conectar na api da steam')
             return False
 
-
-    def obter_comentarios(self, id_jogo: int) -> List:
+    def obter_reviews_steam(self, codigo_jogo_steam: int, intervalo_dias) -> Generator[Dict, None, None]:
         """
-            Método para obter o comentários de um jogo
-            :param id_jogo: id do jogo
-            :type id_jogo: int
-            :return: A lista de comentários
-            :rtype: List
+        Método para obter as reviews da steam
+        :param codigo_jogo_steam: código do jogo da steam
+        :type codigo_jogo_steam: int
+        :param intervalo_dias: intervalo de buscas
+        :type intervalo_dias: int
+        :return: Gerador com as reviews
+        :rtype:  Generator[Dict, None, None]
         """
-        pass
-
+        parametros = {
+            'json': 1,
+            'filter': 'recent',
+            'language': 'portuguese',
+            'cursor': '*',
+            'review_type': 'all',
+            'purchase_type': 'all',
+            'num_per_page': '100',
+            'day_range': intervalo_dias
+        }
+        while True:
+            if parametros['cursor'] is None:
+                break
+            url_api = f'{self.__URL}{codigo_jogo_steam}'
+            req = requests.get(url=url_api, params=parametros, timeout=10)
+            req = req.json()
+            yield from req['reviews']
+            cursor = req.get('cursor')
+            if not cursor:
+                break
+            cursor = cursor.strip('"')
+            parametros['cursor'] = urllib.parse.quote(cursor)

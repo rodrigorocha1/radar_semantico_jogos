@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import List
 
 
 class IAPISteam(ABC):
@@ -13,12 +12,14 @@ class IAPISteam(ABC):
         pass
 
     @abstractmethod
-    def obter_comentarios(self, id_jogo: int) -> List:
+    def obter_reviews_steam(self, codigo_jogo_steam: int, intervalo_dias) -> Generator[Dict, None, None]:
         """
-        Método para obter o comentários de um jogo
-        :param id_jogo: id do jogo
-        :type id_jogo: int
-        :return: A lista de comentários
-        :rtype: List
+        Método para obter as reviews da steam
+        :param codigo_jogo_steam: código do jogo da steam
+        :type codigo_jogo_steam: int
+        :param intervalo_dias: intervalo de buscas
+        :type intervalo_dias: int
+        :return: Gerador com as reviews
+        :rtype:  Generator[Dict, None, None]
         """
         pass
