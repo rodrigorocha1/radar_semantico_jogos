@@ -1,7 +1,11 @@
 import logging
 from pathlib import Path
+log_dir = Path(__file__).resolve().parents[3] / "log"
+log_dir.mkdir(exist_ok=True)
 
-log_file = Path(__file__).parent / "steam_api.log"
+log_file = log_dir / "steam_api.log"
+
+
 
 logger = logging.getLogger("steam_api_checker")
 logger.setLevel(logging.INFO)
