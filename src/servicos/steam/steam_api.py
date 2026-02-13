@@ -1,5 +1,8 @@
 import subprocess
-from typing import Final
+import urllib.parse
+from typing import Final, Generator, Dict
+
+import requests
 
 from src.servicos.config.config import Config
 from src.servicos.config.configuracao_log import logger
@@ -10,7 +13,7 @@ from src.servicos.steam.iapi_steam import IAPISteam
 
 class SteamAPI(IAPISteam):
     def __init__(self):
-        self.__url_base: Final[str] = Config.STEAM_API_URL
+        self.__URL_BASE: Final[str] = Config.STEAM_API_URL
 
     def checar_conexao(self) -> bool:
         """
@@ -21,7 +24,7 @@ class SteamAPI(IAPISteam):
 
         try:
             subprocess.run(
-                ["curl", "-s", "-f", self.__url_base],
+                ["curl", "-s", "-f", self.__URL_BASE],
                 check=True,
                 capture_output=True,
                 text=True
@@ -55,7 +58,7 @@ class SteamAPI(IAPISteam):
         while True:
             if parametros['cursor'] is None:
                 break
-            url_api = f'{self.__URL}{codigo_jogo_steam}'
+            url_api = f'{self.__URL_BASE}{codigo_jogo_steam}'
             req = requests.get(url=url_api, params=parametros, timeout=10)
             req = req.json()
             yield from req['reviews']
