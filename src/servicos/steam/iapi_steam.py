@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Generator, Dict
 
 
 class IAPISteam(ABC):
