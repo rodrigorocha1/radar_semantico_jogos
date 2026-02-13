@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Optional
+
+
 class Corrente(ABC):
     def __init__(self) -> None:
-        self._proxima_corrente : Optional["Corrente"] = None
+        self._proxima_corrente: Optional["Corrente"] = None
 
-    def set_proxima_corrente(self, corrente: "Corrente") :
+    def set_proxima_corrente(self, corrente: "Corrente"):
         self._proxima_corrente = corrente
         return corrente
 
