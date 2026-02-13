@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
+from src.servicos.config.configuracao_log import logger
+from src.contexto.contexto import Contexto
 
 
 class Corrente(ABC):
@@ -10,12 +12,13 @@ class Corrente(ABC):
         self._proxima_corrente = corrente
         return corrente
 
-    def corrente(self, contexto):
+    def corrente(self, contexto: Optional[Contexto] = None):
+        logger.info(f'Executando {self.__class__.__name__}')
         if self.executar_processo(contexto):
-            print('Sucesso')
+            logger.info(f'Sucesso ao executar {self.__class__.__name__}')
         else:
-            print('Falha')
+            logger.info(f'Falha ao executar {self.__class__.__name__}')
 
     @abstractmethod
-    def executar_processo(self, contexto) -> bool:
+    def executar_processo(self, contexto: Optional[Contexto] = None) -> bool:
         pass
