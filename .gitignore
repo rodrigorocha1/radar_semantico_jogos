@@ -2,3 +2,5 @@
 /.idea/inspectionProfiles/Project_Default.xml
 *.xml
 *.iml
+__pycache__
+*.env
