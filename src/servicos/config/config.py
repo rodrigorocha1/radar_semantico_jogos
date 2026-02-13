@@ -7,4 +7,4 @@ load_dotenv()
 
 
 class Config:
-    STEAM_API_URL: Final[str] = os.getenv("STEAM_API_URL")
+    STEAM_API_URL: Final[str] = os.getenv("STEAM_API_URL", " ")
