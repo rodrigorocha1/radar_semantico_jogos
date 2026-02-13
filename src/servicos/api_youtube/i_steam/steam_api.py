@@ -3,7 +3,7 @@ from typing import List, Final
 
 from src.servicos.api_youtube.i_steam.iapi_steam import IAPISteam
 from src.servicos.config.config import Config
-
+from src.servicos.config.configuracao_log import logger
 
 # adicionar log
 
@@ -25,8 +25,10 @@ class SteamAPI(IAPISteam):
                 capture_output=True,
                 text=True
             )
+            logger.info('Sucesso ao conectar na api da steam')
             return True
         except subprocess.CalledProcessError:
+            logger.info('Falha ao conectar na api da steam')
             return False
 
 
