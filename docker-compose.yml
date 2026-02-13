@@ -22,7 +22,7 @@ services:
       retries: 10
     networks:
       mlflow-network:
-        ipv4_address: 172.25.0.2
+        ipv4_address: 172.26.0.2
 
   minio:
     image: minio/minio:latest
@@ -44,7 +44,7 @@ services:
       retries: 20
     networks:
       mlflow-network:
-        ipv4_address: 172.25.0.3
+        ipv4_address: 172.26.0.3
 
   create-bucket:
     image: minio/mc:latest
@@ -62,7 +62,7 @@ services:
     restart: "no"
     networks:
       mlflow-network:
-        ipv4_address: 172.25.0.4
+        ipv4_address: 172.26.0.4
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:${MLFLOW_VERSION}
@@ -99,7 +99,7 @@ services:
       - "${MLFLOW_PORT}:${MLFLOW_PORT}"
     networks:
       mlflow-network:
-        ipv4_address: 172.25.0.5
+        ipv4_address: 172.26.0.5
 
   mlflow-serving:
     image: mlflow-api
@@ -122,11 +122,11 @@ services:
 
     networks:
       mlflow-network:
-        ipv4_address: 172.25.0.6
+        ipv4_address: 172.26.0.6
 
 networks:
   mlflow-network:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.25.0.0/16
+        - subnet: 172.26.0.0/16
