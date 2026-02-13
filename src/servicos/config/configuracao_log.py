@@ -16,7 +16,7 @@ file_formatter = logging.Formatter(
     "%(asctime)s | [%(levelname)s] |  "
     "%(filename)s | %(funcName)s() | %(lineno)d | %(pathname)s | "
     "%(name)s | %(module)s | "
-    "%(threadName)s(%(thread)d) | %(processName)s(%(process)d) - "
+    "%(threadName)s(%(thread)d) | %(processName)s(%(process)d) | "
     "%(message)s",
     "%Y-%m-%d %H:%M:%S"
 )
