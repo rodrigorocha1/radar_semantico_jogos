@@ -1,1 +1,6 @@
+librt==0.8.0
+mypy==1.19.1
+mypy_extensions==1.1.0
+pathspec==1.0.4
 python-dotenv==1.2.1
+typing_extensions==4.15.0
