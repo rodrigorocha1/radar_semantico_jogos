@@ -1,7 +1,7 @@
 import subprocess
 from typing import List, Final
 
-from src.servicos.api_youtube.i_steam.iapi_steam import IAPISteam
+from src.servicos.steam.iapi_steam import IAPISteam
 from src.servicos.config.config import Config
 from src.servicos.config.configuracao_log import logger
 
