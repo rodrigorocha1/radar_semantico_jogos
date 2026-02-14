@@ -1,5 +1,7 @@
 from datetime import datetime
-from typing import Optional
+
+import duckdb
+import pandas as pd
 
 from src.contexto.contexto import Contexto
 from src.corrente_pipeline_comentarios.corrente import Corrente
@@ -14,22 +16,32 @@ class GuardarDadosYoutubeRespostaComentariosS3Corrente(Corrente):
         super().__init__()
         self.__servico_s3 = servico_s3
         self.__caminho_data = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        self.__caminho_arquivo = f'youtube/bronze/resposta_comentarios_youtube/'
+        self.__caminho_arquivo = f'youtube/bronze/resposta_comentarios_youtube/jogo_'
         self.__servico_banco = servico_banco
 
     def executar_processo(self, contexto: Contexto) -> bool:
-        for dados in contexto.lista_id_comentarios:
+
+        for dados in contexto.gerador_resposta_comentarios:
+
             id_comentario = dados['id']
             data_atualizacao_api = dados['snippet']['updatedAt']
 
-            condicao = f"id = {id_comentario} AND snippet.topLevelComment.snippet.updatedAt = {data_atualizacao_api}"
-            caminho_consulta = f"s3://extracao/youtube/bronze/resposta_comentarios_youtube{dados['nome_jogo']}/{dados['snippet']['channelId']}/{dados['videoId']}/*.json"
+            caminho_base = f"{self.__caminho_arquivo}{dados['nome_jogo']}/*/*/*.json"
+            condicao = f"id = '{id_comentario}' AND snippet.updatedAt = '{data_atualizacao_api}'"
+            caminho_consulta = f"s3://extracao/{caminho_base}"
 
-            dataframe = self.__servico_banco.consultar_dados(caminho_consulta=caminho_consulta, id_consulta=condicao)
+            try:
+                dataframe = self.__servico_banco.consultar_dados(caminho_consulta=caminho_consulta,
+                                                                 id_consulta=condicao)
+            except duckdb.IOException as e:
+                dataframe = pd.DataFrame()
+
             if dataframe.empty:
-                caminho_completo = self.__caminho_arquivo + f"{dados['nome_jogo']}/{dados['snippet']['channelId']}/{dados['videoId']}" + f'data_{self.__caminho_data}' + '_reviews.json'
+                logger.info(f'Guardando resposta  comentários: {id_comentario} ')
+
+                caminho_completo = f"{self.__caminho_arquivo}{dados['nome_jogo']}/canal_{dados['snippet']['channelId']}/video_{dados['id_video']}/nome_jogo_{dados['nome_jogo']}.json"
                 self.__servico_s3.guardar_dados(dados, caminho_completo)
             else:
-                logger.info(f'{id_comentario} não teve atualizacao')
+                logger.info(f'Resposta comentários: {id_comentario} não teve atualizacao')
 
         return True

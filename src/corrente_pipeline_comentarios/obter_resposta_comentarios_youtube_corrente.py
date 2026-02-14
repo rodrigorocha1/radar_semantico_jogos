@@ -24,4 +24,6 @@ class ObterRespostaComentariosYoutubeCorrente(Corrente):
         )
         contexto.gerador_resposta_comentarios = gerador_reviews
 
+
+
         return True
