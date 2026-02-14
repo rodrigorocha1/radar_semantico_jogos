@@ -1,6 +1,6 @@
 from typing import Generator, Dict
 
-from googleapiclient.discovery import build
+from googleapiclient.discovery import build # type: ignore
 
 from src.servicos.api_youtube.iapi_youtube import IApiYoutube
 from src.servicos.config.config import Config
