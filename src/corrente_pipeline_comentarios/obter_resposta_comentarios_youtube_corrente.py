@@ -12,15 +12,17 @@ class ObterRespostaComentariosYoutubeCorrente(Corrente):
         super().__init__()
 
     def executar_processo(self, contexto: Contexto) -> bool:
+
         gerador_reviews = chain.from_iterable(
             map(
                 lambda review: {**review, 'nome_jogo': comentario['nome_jogo'],
                                 'id_video': comentario.get('id_video')},
                 self.__api_youtube.obter_resposta_comentarios(
-                    id_comentario=comentario['id']
+                    id_comentario=id_comentario
                 )
             )
-            for comentario in contexto.gerador_comentarios_youtube
+            for id_comentario in contexto.lista_id_comentarios
         )
-        contexto.gerador_resposta_comentarios_youtube = gerador_reviews
+
+
         return True

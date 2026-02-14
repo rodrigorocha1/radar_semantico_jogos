@@ -18,7 +18,7 @@ class GuardarDadosYoutubeRespostaComentariosS3Corrente(Corrente):
         self.__servico_banco = servico_banco
 
     def executar_processo(self, contexto: Contexto) -> bool:
-        for dados in contexto.gerador_comentarios_youtube:
+        for dados in contexto.lista_id_comentarios:
             id_comentario = dados['id']
             data_atualizacao_api = dados['snippet']['updatedAt']
 
@@ -31,4 +31,5 @@ class GuardarDadosYoutubeRespostaComentariosS3Corrente(Corrente):
                 self.__servico_s3.guardar_dados(dados, caminho_completo)
             else:
                 logger.info(f'{id_comentario} não teve atualizacao')
+
         return True
