@@ -33,5 +33,12 @@ class OperacoesBancoDuckDb(IoperacoesBanco):
         return df
 
 
+if __name__ == '__main__':
+    from src.servicos.config.config import Config as c
 
-if __name__ == '__main__'
+    obdb = OperacoesBancoDuckDb()
+    df = obdb.consultar_dados(
+        "1=1",
+        caminho_consulta=f's3://{c.MINIO_BUCKET_PLN}/youtube/bronze/resposta_comentarios_youtube/**/*.json'
+    )
+    print(df)
