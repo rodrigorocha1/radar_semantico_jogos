@@ -38,7 +38,7 @@ class ServicoS3(Iservicos3):
             linhas = []
 
 
-        linhas.append(json.dumps(dados))
+        linhas.append(json.dumps(dados, ensure_ascii=False))
 
 
         novo_conteudo = "\n".join(linhas)
