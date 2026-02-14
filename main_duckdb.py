@@ -1,5 +1,18 @@
 import duckdb
 from src.servicos.config.config import Config
+import pandas as pd
+
+# Mostra todas as colunas
+pd.set_option('display.max_columns', None)
+
+# Ajusta largura do terminal para caber as colunas
+pd.set_option('display.width', 3000)
+
+# Número de linhas a exibir
+pd.set_option('display.max_rows', 10)
+
+# Formatação de floats
+pd.set_option('display.float_format', '{:.2f}'.format)
 
 
 def read_from_minio(path: str, file_type: str = "json", steamid_to_filter: str = None):
@@ -33,7 +46,7 @@ def read_from_minio(path: str, file_type: str = "json", steamid_to_filter: str =
 
     df = con.execute(query).fetchdf()
     return df
-file_path = "s3://extracao/steam/bronze/reviews_steam/jogo_1631270/data_2026_02_13_23_54_38_reviews.json"
+file_path = "s3://extracao/steam/bronze/reviews_steam/jogo_1631270/*.json"
 steamid_to_filter = "76561197979398614"
 
 df = read_from_minio(file_path, file_type="json", steamid_to_filter=steamid_to_filter)
