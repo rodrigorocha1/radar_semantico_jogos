@@ -22,7 +22,7 @@ fs = s3fs.S3FileSystem(
 )
 
 # Caminho base (sem s3:// aqui)
-base_path = "extracao/youtube/bronze/comentarios_youtube"
+base_path = "extracao/youtube/bronze/resposta_comentarios_youtube"
 
 # Busca todos os JSON recursivamente
 arquivos = fs.glob(f"{base_path}/**/*.json")
