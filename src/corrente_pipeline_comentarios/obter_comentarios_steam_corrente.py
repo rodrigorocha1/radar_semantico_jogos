@@ -1,3 +1,4 @@
+from itertools import chain
 from typing import Optional, List
 
 from src.contexto.contexto import Contexto
@@ -12,6 +13,11 @@ class ObterComentariosSteamCorrente(Corrente):
         super().__init__()
 
     def executar_processo(self, contexto: Optional[Contexto] = None) -> bool:
-        for dado in self.__api_steam.obter_reviews_steam(codigo_jogo_steam=1631270, intervalo_dias=3):
-            print(dado)
+        gerador_reviews = chain.from_iterable(
+            self.__api_steam.obter_reviews_steam(
+                codigo_jogo_steam=codigo_jogo,
+                intervalo_dias=365
+            ) for codigo_jogo in self.__lista_jogos
+        )
+        contexto.gerador_reviews_steam = gerador_reviews
         return True
