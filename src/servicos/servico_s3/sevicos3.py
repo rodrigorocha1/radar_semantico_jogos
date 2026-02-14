@@ -19,8 +19,6 @@ class ServicoS3(Iservicos3):
             config=Config(signature_version="s3v4")
         )
 
-    from typing import Dict
-
     def guardar_dados(self, dados: Dict, caminho_arquivo: str):
         """
         Método para guardar dados em formato JSON, adicionando no final do arquivo.
