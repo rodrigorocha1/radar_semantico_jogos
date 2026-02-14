@@ -23,13 +23,15 @@ pd.set_option("display.max_colwidth", 300)
 # Mostrar mais linhas
 pd.set_option("display.max_rows", 20)
 
+
 class ServicoS3(Iservicos3):
 
     def __init__(self):
         self.__cliente_s3 = self._criar_cliente()
-        self.__fs = self._criar_filesystem()
+        self.__fs = self.criar_filesystem()
 
-    def _criar_filesystem(self):
+    @staticmethod
+    def criar_filesystem():
         return s3fs.S3FileSystem(
             key=c.MINIO_ACCESS_KEY,
             secret=c.MINIO_SECRET_KEY,
@@ -46,7 +48,6 @@ class ServicoS3(Iservicos3):
         self._salvar_linhas(caminho_arquivo, linhas)
 
     def ler_jsons_para_dataframe(self, caminho_base: str) -> pd.DataFrame:
-
 
         arquivos = self.__fs.glob(f"{base_path}/**/*.json")
 
@@ -103,6 +104,7 @@ class ServicoS3(Iservicos3):
             Body=novo_conteudo.encode('utf-8'),
             ContentType="application/json"
         )
+
 
 if __name__ == '__main__':
     ss3 = ServicoS3()
