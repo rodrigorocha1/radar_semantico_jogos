@@ -8,7 +8,7 @@ from src.servicos.config.configuracao_log import logger
 from src.servicos.servico_s3.iservicos3 import Iservicos3
 
 
-class GuardarDadosYoutubeS3Corrente(Corrente):
+class GuardarDadosYoutubeRespostaComentariosS3Corrente(Corrente):
 
     def __init__(self, servico_s3: Iservicos3, servico_banco: IoperacoesBanco):
         super().__init__()
