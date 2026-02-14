@@ -17,7 +17,7 @@ class Corrente(ABC):
         self._proxima_corrente = corrente
         return corrente
 
-    def corrente(self, contexto: Optional[Contexto] = None):
+    def corrente(self, contexto: Contexto):
         """
         Executa o processo desta corrente.
         Se houver sucesso, passa para a próxima corrente (se existir).

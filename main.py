@@ -27,7 +27,27 @@ from src.servicos.steam.steam_api import SteamAPI
 
 '''
 contexto = Contexto()
-lista_jogos = [1631270, 275850, 392160, 526870, 1284190, 4078590, 3142540, 359320, 1336350]
+lista_jogos = [
+    (1631270, "star_rupture"),
+    (275850, "no_mans_sky"),
+    (392160, "x4_foundations"),
+    (526870, "satisfactory"),
+    (1284190, "planet_crafter"),
+    (4078590, "the_planet_crafter_toxicity"),
+    (3142540, "the_planet_crafter_planet_humble"),
+    (359320, "elite_dangerous"),
+    (1336350, "elite_dangerous_odissey"),
+    (227300, "euro_truck_simulator"),
+    (2604420, "euro_truck_simulator_grecia"),
+    (1209460, "euro_truck_simulator_iberia"),
+    (558244, "euro_truck_simulator_italia"),
+    (925580, "euro_truck_simulator_beyound_the_baltic_sea"),
+    (1056760, "euro_truck_simulator_road_to_the_black_sea"),
+    (531130, "euro_truck_simulator_vive_le_france"),
+    (304212, "euro_truck_simulator_scandinaavia"),
+    (227310, "euro_truck_simulator_going_east"),
+    (2780810, "euro_truck_simulator_nordic_horizons"),
+]
 lista_jogos_youtube = [
     ('WLilIKOJYi0', 'star_rupture'),
     ('D1PDHTGNswI', 'star_rupture'),
