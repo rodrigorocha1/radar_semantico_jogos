@@ -5,11 +5,15 @@ from typing import Dict
 class Iservicos3(ABC):
 
     @abstractmethod
-    def guardar_dados(self, dados: Dict):
+    def guardar_dados(self, dados: Dict, caminho_arquivo: str):
         """
-        Método para Guardar json no s3 minio
-        :param dados: json
+        Método para guardar dados
+
+        :param dados: requisição da api
         :type dados: Dict
-        :return: None
-        :rtype: None
+        :param caminho_arquivo: caminho do arquivo
+        :type caminho_arquivo:  str
+        :return:
+        :rtype:
         """
+        pass
