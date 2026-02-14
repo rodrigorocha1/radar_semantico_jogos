@@ -1,4 +1,3 @@
-import json
 from typing import Dict
 
 import boto3
@@ -20,21 +19,32 @@ class ServicoS3(Iservicos3):
             config=Config(signature_version="s3v4")
         )
 
+    from typing import Dict
+
     def guardar_dados(self, dados: Dict, caminho_arquivo: str):
         """
-        Método para guardar dados
+        Método para guardar dados em formato JSON, adicionando no final do arquivo.
 
         :param dados: requisição da api
         :type dados: Dict
-        :param caminho_arquivo: caminho do arquivo
-        :type caminho_arquivo:  str
-        :return:
-        :rtype:
+        :param caminho_arquivo: caminho do arquivo no bucket
+        :type caminho_arquivo: str
         """
+        try:
+
+            obj = self.__cliente_s3.get_object(Bucket=c.MINIO_BUCKET_PLN, Key=caminho_arquivo)
+            conteudo_existente = obj['Body'].read().decode('utf-8')
+            linhas = [linha for linha in conteudo_existente.splitlines() if linha.strip()]
+        except self.__cliente_s3.exceptions.NoSuchKey:
+
+            linhas = []
+
+        novo_conteudo = "\n".join(linhas)
+
         self.__cliente_s3.put_object(
             Bucket=c.MINIO_BUCKET_PLN,
             Key=caminho_arquivo,
-            Body=json.dumps(dados),
+            Body=novo_conteudo.encode('utf-8'),
             ContentType="application/json"
         )
 
@@ -48,7 +58,6 @@ if __name__ == '__main__':
 
     # Caminho do arquivo no MinIO
     arquivo_s3 = "dados/usuario.json"
-
 
     ss3 = ServicoS3()
     ss3.guardar_dados(meu_json, arquivo_s3)
