@@ -13,6 +13,7 @@ from src.servicos.api_youtube.api_youtube import YoutubeAPI
 from src.servicos.banco.operacoes_banco import OperacoesBancoDuckDb
 from src.servicos.servico_s3.sevicos3 import ServicoS3
 from src.servicos.steam.steam_api import SteamAPI
+
 '''
 1631270 - Star Rupture
 275850 - No Man's Sky
@@ -20,12 +21,22 @@ from src.servicos.steam.steam_api import SteamAPI
 526870 - Satisfactory
 1284190 - Planet Crafter
 4078590- The Planet Crafter - Toxicity
+3142540 - The Planet Crafter - Planet Humble
+359320 - Elite Dangerous
+1336350 -  Elite Dangerous: Odyssey
 
-275850, 392160, 526870,  1284190
 '''
 contexto = Contexto()
-lista_jogos = [1631270]
-lista_jogos_youtube = [('tg51dCB_WbE', 'windows')]
+lista_jogos = [1631270, 275850, 392160, 526870, 1284190, 4078590, 3142540, 359320, 1336350]
+lista_jogos_youtube = [
+    ('WLilIKOJYi0', 'star_rupture'),
+    ('D1PDHTGNswI', 'star_rupture'),
+    ('9Ib27hgkG3s', 'star_rupture'),
+    ('OvHk_itOugs', 'satisfactory'),
+    ('RHnmuA3Y9Qg', 'satisfactory'),
+    ('4oX_-JH0wVo', 'satisfactory'),
+    ('4xyxT8o-JPhA', 'satisfactory')
+]
 steam_api = SteamAPI()
 servico_s3 = ServicoS3()
 servico_banco = OperacoesBancoDuckDb()
@@ -55,10 +66,6 @@ p7 = GuardarDadosYoutubeRespostaComentariosS3Corrente(
     servico_banco=servico_banco
 )
 
-# p1.set_proxima_corrente(p2).set_proxima_corrente(p3).set_proxima_corrente(p4).set_proxima_corrente(
-#     p5).set_proxima_corrente(p6).set_proxima_corrente(p7)
-# p1.corrente(contexto=contexto)
-
-
-p1.set_proxima_corrente(p2).set_proxima_corrente(p3)
+p1.set_proxima_corrente(p2).set_proxima_corrente(p3).set_proxima_corrente(p4).set_proxima_corrente(
+    p5).set_proxima_corrente(p6).set_proxima_corrente(p7)
 p1.corrente(contexto=contexto)
