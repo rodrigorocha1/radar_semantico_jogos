@@ -1,21 +1,51 @@
 from src.contexto.contexto import Contexto
+from src.corrente_pipeline_comentarios.guardar_dados_comentarios_youtube_s3_corrente import \
+    GuardarDadosYoutubeComentariosS3Corrente
+from src.corrente_pipeline_comentarios.guardar_dados_resposta_comentarios_youtube_s3_corrente import \
+    GuardarDadosYoutubeRespostaComentariosS3Corrente
 from src.corrente_pipeline_comentarios.guardar_dados_steam_s3_corrente import GuardarDadosSteam3Corrente
 from src.corrente_pipeline_comentarios.obter_comentarios_steam_corrente import ObterComentariosSteamCorrente
+from src.corrente_pipeline_comentarios.obter_comentarios_youtube_corrente import ObterComentariosYoutubeCorrente
+from src.corrente_pipeline_comentarios.obter_resposta_comentarios_youtube_corrente import \
+    ObterRespostaComentariosYoutubeCorrente
 from src.corrente_pipeline_comentarios.verificar_conexao_api_steam_corrente import VerificarConexaoApiSteamCorrente
+from src.servicos.api_youtube.api_youtube import YoutubeAPI
 from src.servicos.banco.operacoes_banco import OperacoesBancoDuckDb
 from src.servicos.servico_s3.sevicos3 import ServicoS3
 from src.servicos.steam.steam_api import SteamAPI
 
-contexto = Contexto(gerador_reviews_steam=None)
+contexto = Contexto()
 lista_jogos = [1631270, 275850]
+lista_jogos_youtube = [('tg51dCB_WbE', 'windows')]
 steam_api = SteamAPI()
 servico_s3 = ServicoS3()
 servico_banco = OperacoesBancoDuckDb()
+api_youtube = YoutubeAPI()
+
 p1 = VerificarConexaoApiSteamCorrente(steam_api=steam_api)
 p2 = ObterComentariosSteamCorrente(api_steam=SteamAPI(), lista_jogos=lista_jogos)
 p3 = GuardarDadosSteam3Corrente(
     servico_s3=servico_s3,
     servico_banco=servico_banco
 )
-p1.set_proxima_corrente(p2).set_proxima_corrente(p3)
+
+p4 = ObterComentariosYoutubeCorrente(
+    lista_jogos=lista_jogos_youtube,
+    api_youtube=api_youtube
+)
+
+p5 = GuardarDadosYoutubeComentariosS3Corrente(
+    servico_s3=servico_s3,
+    servico_banco=servico_banco
+)
+p6 = ObterRespostaComentariosYoutubeCorrente(
+    api_youtube=api_youtube
+)
+p7 = GuardarDadosYoutubeRespostaComentariosS3Corrente(
+    servico_s3=servico_s3,
+    servico_banco=servico_banco
+)
+
+p1.set_proxima_corrente(p2).set_proxima_corrente(p3).set_proxima_corrente(p4).set_proxima_corrente(
+    p5).set_proxima_corrente(p6).set_proxima_corrente(p7)
 p1.corrente(contexto=contexto)
