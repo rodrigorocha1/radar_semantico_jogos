@@ -1,9 +1,10 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Dict
 
 
 class Iservicos3(ABC):
 
+    @abstractmethod
     def guardar_dados(self, dados: Dict):
         """
         Método para Guardar json no s3 minio
