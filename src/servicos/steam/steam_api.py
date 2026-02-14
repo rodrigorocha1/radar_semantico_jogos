@@ -1,5 +1,7 @@
+import itertools
 import subprocess
 import urllib.parse
+from itertools import chain
 from typing import Final, Generator, Dict
 
 import requests
@@ -67,3 +69,18 @@ class SteamAPI(IAPISteam):
                 break
             cursor = cursor.strip('"')
             parametros['cursor'] = urllib.parse.quote(cursor)
+
+
+if __name__ == '__main__':
+    steam_api = SteamAPI()
+    jogos = [1631270, 1631270]
+
+    # Guardar o generator sem consumir ainda
+    generator_reviews = chain.from_iterable(
+        steam_api.obter_reviews_steam(codigo_jogo_steam=j, intervalo_dias=2)
+        for j in jogos
+    )
+    print(type(generator_reviews))
+
+    a: itertools.chain = generator_reviews
+    print(type(generator_reviews))
