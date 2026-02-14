@@ -52,16 +52,31 @@ lista_jogos = [
     (227310, "euro_truck_simulator_going_east"),
     (2780810, "euro_truck_simulator_nordic_horizons"),
     (244850, "space_engineers"),
+    (255710, "cities_skylines"),
+    (949230, "cities_skylines_dois"),
 
 ]
 lista_jogos_youtube = [
     ('WLilIKOJYi0', 'star_rupture'),
     ('D1PDHTGNswI', 'star_rupture'),
     ('9Ib27hgkG3s', 'star_rupture'),
+    ('xpo9nSt7Das', 'star_rupture'),
+    ('ri0cpSX2ero', 'star_rupture'),
+    ('0YfO99f2QSU', 'star_rupture'),
+    ('vZLYbXaaXLA', 'star_rupture'),
+    ('jxx8ue0SwnA', 'star_rupture'),
+    ('DvbJDTxb7is', 'star_rupture'),
+    ('w5yNWwJn7V8', 'star_rupture'),
+    ('xdZoDbeJ-oM', 'star_rupture'),
     ('OvHk_itOugs', 'satisfactory'),
     ('RHnmuA3Y9Qg', 'satisfactory'),
     ('4oX_-JH0wVo', 'satisfactory'),
-    ('4xyxT8o-JPhA', 'satisfactory')
+    ('xyxT8o-JPhA', 'satisfactory'),
+    ('yB97xvhGf3s', 'satisfactory'),
+    ('lF0hBETvOuQ', 'satisfactory'),
+    ('jEFz4PVixrQ', 'satisfactory'),
+    ('7Ulg3PRYo80', 'satisfactory'),
+    ('04y9zgwsqU4', 'satisfactory')
 ]
 steam_api = SteamAPI()
 servico_s3 = ServicoS3()
