@@ -42,7 +42,31 @@ class CriacaoDataframeCompletoCorrente(Corrente):
         dataframe.rename(columns={'recommendationid': 'id_texto', 'review': 'texto_comentario'}, inplace=True)
         return dataframe
 
+    def __criar_dataframe_youtube_comentarios(self) -> pd.DataFrame:
+        caminho_base = "extracao/youtube/bronze/comentarios_youtube"
+        dataframe = self.__servico_s3.ler_jsons_para_dataframe(caminho_base)
+        dataframe["codigo_steam"] = dataframe["nome_jogo"].map(self.__jogos_dict_invertido)
+        dataframe["textDisplay"] = dataframe["snippet"].apply(
+            lambda x: x["topLevelComment"]["snippet"]["textDisplay"]
+        )
+        dataframe = dataframe[['id', 'codigo_steam', 'nome_jogo', 'textDisplay']]
+        dataframe.rename(columns={'id': 'id_texto', 'textDisplay': 'texto_comentario'}, inplace=True)
+        return dataframe
+
+    def __criar_dataframe_youtube_resposta_comentarios(self) -> pd.DataFrame:
+        caminho_base = "extracao/youtube/bronze/resposta_comentarios_youtube"
+        dataframe = self.__servico_s3.ler_jsons_para_dataframe(caminho_base)
+        dataframe["codigo_steam"] = dataframe["nome_jogo"].map(self.__jogos_dict_invertido)
+        dataframe["textDisplay"] = dataframe["snippet"].apply(
+            lambda x: x["topLevelComment"]["snippet"]["textDisplay"]
+        )
+        dataframe = dataframe[['id', 'codigo_steam', 'nome_jogo', 'textDisplay']]
+        dataframe.rename(columns={'id': 'id_texto', 'textDisplay': 'texto_comentario'}, inplace=True)
+
+        return dataframe
+
     def executar_processo(self, contexto: Contexto) -> bool:
         dataframe_steam = self.__criar_dataframe_steam()
+        dataframe_comentarios_youtube = self.__criar_dataframe_youtube_comentarios()
 
         return True
