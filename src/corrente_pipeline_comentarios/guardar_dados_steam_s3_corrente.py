@@ -16,6 +16,7 @@ class GuardarDadosSteam3Corrente(Corrente):
 
     def executar_processo(self, contexto: Optional[Contexto] = None) -> bool:
         for dados in contexto.gerador_reviews_steam:
+
             caminho_completo = self.__caminho_arquivo + f'jogo_{dados["codigo_steam"]}/' + f'data_{self.__caminho_data}' + '_reviews.json'
             self.__servico_s3.guardar_dados(dados, caminho_completo)
         return True

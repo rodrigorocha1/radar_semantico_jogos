@@ -1,5 +1,5 @@
 from typing import Dict
-
+import json
 import boto3
 from botocore.client import Config
 
@@ -34,10 +34,15 @@ class ServicoS3(Iservicos3):
             conteudo_existente = obj['Body'].read().decode('utf-8')
             linhas = [linha for linha in conteudo_existente.splitlines() if linha.strip()]
         except self.__cliente_s3.exceptions.NoSuchKey:
-
+            # Se não existir, começa com lista vazia
             linhas = []
 
+
+        linhas.append(json.dumps(dados))
+
+
         novo_conteudo = "\n".join(linhas)
+
 
         self.__cliente_s3.put_object(
             Bucket=c.MINIO_BUCKET_PLN,
