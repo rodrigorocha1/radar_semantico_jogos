@@ -17,10 +17,14 @@ class ObterComentariosSteamCorrente(Corrente):
             return False
         if contexto.gerador_reviews_steam is None:
             gerador_reviews = chain.from_iterable(
-                self.__api_steam.obter_reviews_steam(
-                    codigo_jogo_steam=codigo_jogo,
-                    intervalo_dias=365
-                ) for codigo_jogo in self.__lista_jogos
+                map(
+                    lambda review: {**review, 'codigo_steam': codigo_jogo},
+                    self.__api_steam.obter_reviews_steam(
+                        codigo_jogo_steam=codigo_jogo,
+                        intervalo_dias=365
+                    )
+                )
+                for codigo_jogo in self.__lista_jogos
             )
             contexto.gerador_reviews_steam = gerador_reviews
             return True
