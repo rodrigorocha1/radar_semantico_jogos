@@ -1,6 +1,9 @@
 from datetime import datetime
 from typing import Optional
 
+import duckdb
+import pandas as pd
+
 from src.contexto.contexto import Contexto
 from src.corrente_pipeline_comentarios.corrente import Corrente
 from src.servicos.banco.ioperacoes_banco import IoperacoesBanco
@@ -26,8 +29,10 @@ class GuardarDadosSteam3Corrente(Corrente):
 
             condicao = f"author.steamid = {steamid_api} AND timestamp_updated = {timestamp_updated_api}"
             caminho_consulta = "s3://extracao/steam/bronze/reviews_steam/" + f'jogo_{dados["codigo_steam"]}/' + '*.json'
-
-            dataframe = self.__servico_banco.consultar_dados(caminho_consulta=caminho_consulta,id_consulta=condicao)
+            try:
+                dataframe = self.__servico_banco.consultar_dados(caminho_consulta=caminho_consulta,id_consulta=condicao)
+            except duckdb.IOException:
+                dataframe = pd.DataFrame()
             if  dataframe.empty:
                 caminho_completo = self.__caminho_arquivo + f'jogo_{dados["codigo_steam"]}/' + f'data_{self.__caminho_data}' + '_reviews.json'
                 self.__servico_s3.guardar_dados(dados, caminho_completo)
