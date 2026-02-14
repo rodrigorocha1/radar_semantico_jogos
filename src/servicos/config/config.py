@@ -14,3 +14,4 @@ class Config:
     MINIO_BUCKET: Final[str] = os.getenv("MINIO_BUCKET")
     AWS_REGION: Final[str] = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
     MINIO_BUCKET_PLN: Final[str] = os.getenv("MINIO_BUCKET_PLN", "")
+    MINIO_HOST_URL_DUCKDB: Final[str] = os.getenv("MINIO_HOST_URL_DUCKDB", "")
