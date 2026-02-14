@@ -1,3 +1,4 @@
+import json
 from typing import Dict
 
 import boto3
@@ -10,7 +11,7 @@ from src.servicos.servico_s3.iservicos3 import Iservicos3
 class ServicoS3(Iservicos3):
 
     def __init__(self):
-        self.__boto3 = boto3.client(
+        self.__cliente_s3 = boto3.client(
             "s3",
             endpoint_url=c.MINIO_ENDPOINT,
             aws_access_key_id=c.MINIO_ACCESS_KEY,
@@ -30,4 +31,24 @@ class ServicoS3(Iservicos3):
         :return:
         :rtype:
         """
-        pass
+        self.__cliente_s3.put_object(
+            Bucket=c.MINIO_BUCKET_PLN,
+            Key=caminho_arquivo,
+            Body=json.dumps(dados),
+            ContentType="application/json"
+        )
+
+
+if __name__ == '__main__':
+    meu_json = {
+        "nome": "Rodrigo",
+        "idade": 30,
+        "profissao": "desenvolvedor"
+    }
+
+    # Caminho do arquivo no MinIO
+    arquivo_s3 = "dados/usuario.json"
+
+
+    ss3 = ServicoS3()
+    ss3.guardar_dados(meu_json, arquivo_s3)
