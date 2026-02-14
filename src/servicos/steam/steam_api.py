@@ -1,4 +1,3 @@
-import itertools
 import subprocess
 import urllib.parse
 from itertools import chain
@@ -63,6 +62,7 @@ class SteamAPI(IAPISteam):
             url_api = f'{self.__URL_BASE}{codigo_jogo_steam}'
             req = requests.get(url=url_api, params=parametros, timeout=10)
             req = req.json()
+
             yield from req['reviews']
             cursor = req.get('cursor')
             if not cursor:
@@ -80,7 +80,6 @@ if __name__ == '__main__':
         steam_api.obter_reviews_steam(codigo_jogo_steam=j, intervalo_dias=2)
         for j in jogos
     )
-    print(type(generator_reviews))
-
-    a: itertools.chain = generator_reviews
-    print(type(generator_reviews))
+    for dado in generator_reviews:
+        print(dado)
+        print()
