@@ -1,6 +1,8 @@
-import itertools
-from typing import NamedTuple, Optional, Any
+from dataclasses import dataclass
+from itertools import chain
+from typing import Optional, Any
 
 
-class Contexto(NamedTuple):
-    gerador_reviews_steam: Optional[itertools.chain[Any]] = None
+@dataclass
+class Contexto:
+    gerador_reviews_steam: Optional[chain[Any]] = None
