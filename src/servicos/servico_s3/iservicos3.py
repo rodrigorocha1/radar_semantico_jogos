@@ -19,7 +19,3 @@ class Iservicos3(ABC):
         :rtype:
         """
         pass
-
-    @abstractmethod
-    def ler_jsons_para_dataframe(self, caminho_base: str) -> pd.DataFrame:
-        pass

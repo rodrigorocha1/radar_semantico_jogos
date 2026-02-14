@@ -47,23 +47,6 @@ class ServicoS3(Iservicos3):
 
         self._salvar_linhas(caminho_arquivo, linhas)
 
-    def ler_jsons_para_dataframe(self, caminho_base: str) -> pd.DataFrame:
-
-        arquivos = self.__fs.glob(f"{base_path}/**/*.json")
-
-        print(f"Arquivos encontrados: {len(arquivos)}")
-
-        if not arquivos:
-            return pd.DataFrame()
-
-        dfs = []
-
-        for arquivo in arquivos:
-            with self.__fs.open(arquivo) as f:
-                dfs.append(pd.read_json(f, lines=True))
-
-        return pd.concat(dfs, ignore_index=True)
-
     @staticmethod
     def _criar_cliente():
         return boto3.client(
@@ -104,18 +87,3 @@ class ServicoS3(Iservicos3):
             Body=novo_conteudo.encode('utf-8'),
             ContentType="application/json"
         )
-
-
-if __name__ == '__main__':
-    ss3 = ServicoS3()
-
-    base_path = "extracao/steam/bronze/reviews_steam"
-
-    df = ss3.ler_jsons_para_dataframe(base_path)
-    df_tratado = df[['recommendationid', 'codigo_steam', 'nome_jogo', 'review']]
-    df_tratado.rename(columns={'recommendationid': 'id_texto', 'review': 'texto_comentario'}, inplace=True)
-
-    print("Total registros:", len(df_tratado))
-
-    print(df_tratado.head())
-    print(df_tratado.shape)

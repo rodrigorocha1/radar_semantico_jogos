@@ -31,3 +31,7 @@ class OperacoesBancoDuckDb(IoperacoesBanco):
         result = self.__con.execute(query, [caminho_consulta])
         df = result.fetchdf()
         return df
+
+
+
+if __name__ == '__main__'
