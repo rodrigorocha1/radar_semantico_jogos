@@ -16,7 +16,7 @@ class ObterComentariosYoutubeCorrente(Corrente):
     def executar_processo(self, contexto: Optional[Contexto] = None) -> bool:
         if contexto is None:
             return False
-        if contexto.gerador_comentarios_youtube is None:
+        if contexto.gerador_comentarios_youtube is  None:
             gerador_reviews = chain.from_iterable(
                 map(
                     lambda review: {**review, 'nome_jogo': nome_jogo[1]},
