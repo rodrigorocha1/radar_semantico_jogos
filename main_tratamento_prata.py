@@ -1,6 +1,7 @@
 import time
 
 from src.contexto.contexto import Contexto
+from src.corrente_pipeline_comentarios.criacao_dataframe_completo_corrente import CriacaoDataframeCompletoCorrente
 from src.corrente_pipeline_comentarios.guardar_dados_comentarios_youtube_s3_corrente import \
     GuardarDadosYoutubeComentariosS3Corrente
 from src.corrente_pipeline_comentarios.guardar_dados_resposta_comentarios_youtube_s3_corrente import \
@@ -26,8 +27,9 @@ servico_s3 = ServicoS3()
 servico_banco = OperacoesBancoDuckDb()
 api_youtube = YoutubeAPI()
 
-p1 = VerificarConexaoApiSteamCorrente(steam_api=steam_api)
+p1 = CriacaoDataframeCompletoCorrente(servico_banco=servico_banco)
 
+p1.corrente(contexto)
 fim = time.perf_counter()
 tempo_total = fim - inicio
 
