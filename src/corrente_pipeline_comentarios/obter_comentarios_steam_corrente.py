@@ -13,11 +13,13 @@ class ObterComentariosSteamCorrente(Corrente):
         super().__init__()
 
     def executar_processo(self, contexto: Optional[Contexto] = None) -> bool:
-        gerador_reviews = chain.from_iterable(
-            self.__api_steam.obter_reviews_steam(
-                codigo_jogo_steam=codigo_jogo,
-                intervalo_dias=365
-            ) for codigo_jogo in self.__lista_jogos
-        )
-        contexto.gerador_reviews_steam = gerador_reviews
-        return True
+        if contexto.gerador_reviews_steam is None:
+            gerador_reviews = chain.from_iterable(
+                self.__api_steam.obter_reviews_steam(
+                    codigo_jogo_steam=codigo_jogo,
+                    intervalo_dias=365
+                ) for codigo_jogo in self.__lista_jogos
+            )
+            contexto.gerador_reviews_steam = gerador_reviews
+            return True
+        return False
