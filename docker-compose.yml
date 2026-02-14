@@ -101,28 +101,28 @@ services:
       mlflow-network:
         ipv4_address: 172.26.0.5
 
-  mlflow-serving:
-    image: mlflow-api
-    container_name: mlflow-api-producao
-    depends_on:
-      - mlflow
-    environment:
-      MLFLOW_TRACKING_URI: http://mlflow-server:5000
-      AWS_ACCESS_KEY_ID: minio
-      AWS_SECRET_ACCESS_KEY: minio123
-      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
-    ports:
-      - "5002:5002"
-    command: >
-      mlflow models serve
-      -m models:/VotingRegressorPipeline/Production
-      --host 0.0.0.0
-      -p 5002
-      --env-manager=local
-
-    networks:
-      mlflow-network:
-        ipv4_address: 172.26.0.6
+#  mlflow-serving:
+#    image: mlflow-api
+#    container_name: mlflow-api-producao
+#    depends_on:
+#      - mlflow
+#    environment:
+#      MLFLOW_TRACKING_URI: http://mlflow-server:5000
+#      AWS_ACCESS_KEY_ID: minio
+#      AWS_SECRET_ACCESS_KEY: minio123
+#      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+#    ports:
+#      - "5002:5002"
+#    command: >
+#      mlflow models serve
+#      -m models:/VotingRegressorPipeline/Production
+#      --host 0.0.0.0
+#      -p 5002
+#      --env-manager=local
+#
+#    networks:
+#      mlflow-network:
+#        ipv4_address: 172.26.0.6
 
 networks:
   mlflow-network:
