@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+
 import duckdb
 import pandas as pd
 
@@ -20,6 +20,7 @@ class GuardarDadosYoutubeComentariosS3Corrente(Corrente):
         self.__servico_banco = servico_banco
 
     def executar_processo(self, contexto: Contexto) -> bool:
+
         for dados in contexto.gerador_comentarios_youtube:
 
             id_comentario = dados['id']
@@ -44,6 +45,6 @@ class GuardarDadosYoutubeComentariosS3Corrente(Corrente):
             else:
                 logger.info(f'{id_comentario} não teve atualizacao')
 
-
+            contexto.lista_id_comentarios.append((dados['nome_jogo'], id_comentario))
 
         return True
