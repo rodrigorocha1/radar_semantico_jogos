@@ -18,7 +18,7 @@ class GuardarDadosSteam3Corrente(Corrente):
         self.__servico_banco = servico_banco
 
 
-    def executar_processo(self, contexto: Optional[Contexto] = None) -> bool:
+    def executar_processo(self, contexto: Contexto) -> bool:
         for dados in contexto.gerador_reviews_steam:
             steamid_api = dados['author']['steamid']
             timestamp_updated_api = dados['timestamp_updated']

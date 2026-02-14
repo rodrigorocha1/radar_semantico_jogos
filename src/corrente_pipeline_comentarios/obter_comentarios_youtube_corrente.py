@@ -12,7 +12,7 @@ class ObterComentariosYoutubeCorrente(Corrente):
         self.__lista_jogos = lista_jogos
         super().__init__()
 
-    def executar_processo(self, contexto: Optional[Contexto] = None) -> bool:
+    def executar_processo(self, contexto: Contexto) -> bool:
         gerador_reviews = chain.from_iterable(
             map(
                 lambda review: {**review, 'nome_jogo': nome_jogo[1]},

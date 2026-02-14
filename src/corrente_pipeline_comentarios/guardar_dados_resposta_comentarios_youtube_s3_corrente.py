@@ -17,7 +17,7 @@ class GuardarDadosYoutubeRespostaComentariosS3Corrente(Corrente):
         self.__caminho_arquivo = f'youtube/bronze/resposta_comentarios_youtube/'
         self.__servico_banco = servico_banco
 
-    def executar_processo(self, contexto: Optional[Contexto] = None) -> bool:
+    def executar_processo(self, contexto: Contexto) -> bool:
         for dados in contexto.gerador_comentarios_youtube:
             id_comentario = dados['id']
             data_atualizacao_api = dados['snippet']['updatedAt']

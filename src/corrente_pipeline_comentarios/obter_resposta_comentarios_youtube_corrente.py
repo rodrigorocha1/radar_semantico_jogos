@@ -11,7 +11,7 @@ class ObterRespostaComentariosYoutubeCorrente(Corrente):
         self.__api_youtube = api_youtube
         super().__init__()
 
-    def executar_processo(self, contexto: Optional[Contexto] = None) -> bool:
+    def executar_processo(self, contexto: Contexto) -> bool:
         gerador_reviews = chain.from_iterable(
             map(
                 lambda review: {**review, 'nome_jogo': comentario['nome_jogo'],

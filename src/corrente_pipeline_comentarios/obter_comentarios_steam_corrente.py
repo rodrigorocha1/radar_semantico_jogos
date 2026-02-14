@@ -12,7 +12,7 @@ class ObterComentariosSteamCorrente(Corrente):
         self.__lista_jogos = lista_jogos
         super().__init__()
 
-    def executar_processo(self, contexto: Optional[Contexto] = None) -> bool:
+    def executar_processo(self, contexto: Contexto) -> bool:
         if contexto is None:
             return False
         if contexto.gerador_reviews_steam is None:

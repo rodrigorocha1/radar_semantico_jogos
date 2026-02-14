@@ -33,7 +33,7 @@ class Corrente(ABC):
             logger.warning(f'{self.__class__.__name__} -> Falha, pipeline interrompido')
 
     @abstractmethod
-    def executar_processo(self, contexto: Optional[Contexto] = None) -> bool:
+    def executar_processo(self, contexto: Contexto) -> bool:
         """
         Deve ser implementado em cada corrente concreta.
         Retorna True se o processo foi bem-sucedido, False caso contrário.
