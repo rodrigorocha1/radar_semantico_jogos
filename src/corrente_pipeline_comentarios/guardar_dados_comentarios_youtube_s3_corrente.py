@@ -38,11 +38,12 @@ class GuardarDadosYoutubeComentariosS3Corrente(Corrente):
 
             if dataframe.empty:
                 logger.info(f'{id_comentario}  teve atualizacao')
-                caminho_arquivo = f"{self.__caminho_arquivo}{dados['nome_jogo']}/{dados['snippet']['channelId']}/{dados['snippet']['videoId']}/*.json"
+                caminho_arquivo = f"{self.__caminho_arquivo}{dados['nome_jogo']}/canal_{dados['snippet']['channelId']}/video_{dados['snippet']['videoId']}/nome_jogo_{dados['nome_jogo']}.json"
 
                 self.__servico_s3.guardar_dados(dados, caminho_arquivo)
             else:
                 logger.info(f'{id_comentario} não teve atualizacao')
+
 
 
         return True
