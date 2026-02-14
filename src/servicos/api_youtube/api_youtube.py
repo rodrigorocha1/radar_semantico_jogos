@@ -9,7 +9,7 @@ from src.servicos.config.config import Config
 class YoutubeAPI(IApiYoutube):
 
     def __init__(self):
-        self.__youtube = build('youtube', 'v3', developerKey=Config.URL_API_YOUTUBE)
+        self.__youtube = build('youtube', 'v3', developerKey=Config.CHAVE_API_YOUTUBE)
 
     def obter_comentarios_youtube(self, id_video: str) -> Generator[Dict, None, None]:
         """
