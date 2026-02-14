@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Dict
 
+import pandas as pd
+
 
 class Iservicos3(ABC):
 
@@ -16,4 +18,8 @@ class Iservicos3(ABC):
         :return:
         :rtype:
         """
+        pass
+
+    @abstractmethod
+    def ler_jsons_para_dataframe(self, caminho_base: str) -> pd.DataFrame:
         pass
