@@ -38,6 +38,7 @@ class GuardarDadosSteam3Corrente(Corrente):
             if  dataframe.empty:
                 caminho_completo = self.__caminho_arquivo + f'jogo_{dados["codigo_steam"]}/' + f'data_{self.__caminho_data}' + '_reviews.json'
                 self.__servico_s3.guardar_dados(dados, caminho_completo)
+                logger.info(f'{steamid_api} Gravado')
             else:
                 logger.info(f'{steamid_api} não teve atualizacao')
         return True
