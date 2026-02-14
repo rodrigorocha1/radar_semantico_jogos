@@ -45,6 +45,8 @@ class GuardarDadosYoutubeComentariosS3Corrente(Corrente):
             else:
                 logger.info(f'{id_comentario} não teve atualizacao')
 
-            contexto.lista_id_comentarios.append((dados['nome_jogo'], id_comentario))
+            contexto.lista_id_comentarios.append(
+                (dados['nome_jogo'], dados['snippet']['channelId'], dados['snippet']['videoId'], id_comentario)
+            )
 
         return True
