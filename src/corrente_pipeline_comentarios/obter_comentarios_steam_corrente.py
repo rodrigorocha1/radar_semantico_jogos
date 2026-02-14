@@ -13,6 +13,8 @@ class ObterComentariosSteamCorrente(Corrente):
         super().__init__()
 
     def executar_processo(self, contexto: Optional[Contexto] = None) -> bool:
+        if contexto is None:
+            return False
         if contexto.gerador_reviews_steam is None:
             gerador_reviews = chain.from_iterable(
                 self.__api_steam.obter_reviews_steam(
