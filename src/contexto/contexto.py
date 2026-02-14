@@ -7,3 +7,4 @@ from typing import Any, Optional
 class Contexto:
     gerador_reviews_steam: Optional[chain[Any]] = None
     gerador_comentarios_youtube: Optional[chain[Any]] = None
+    gerador_resposta_comentarios_youtube: Optional[chain[Any]] = None
