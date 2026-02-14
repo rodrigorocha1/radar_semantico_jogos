@@ -24,6 +24,8 @@ class GuardarDadosSteam3Corrente(Corrente):
     def executar_processo(self, contexto: Contexto) -> bool:
 
         for dados in contexto.gerador_reviews_steam:
+
+            logger.info(f'Guardando json do jogo {dados["codigo_steam"]}')
             steamid_api = dados['author']['steamid']
             timestamp_updated_api = dados['timestamp_updated']
 

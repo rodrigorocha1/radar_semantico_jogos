@@ -22,6 +22,7 @@ class GuardarDadosYoutubeRespostaComentariosS3Corrente(Corrente):
     def executar_processo(self, contexto: Contexto) -> bool:
 
         for dados in contexto.gerador_resposta_comentarios:
+            logger.info(f'Guardando json do jogo {dados["nome_jogo"]}')
 
             id_comentario = dados['id']
             data_atualizacao_api = dados['snippet']['updatedAt']
