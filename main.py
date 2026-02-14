@@ -1,3 +1,5 @@
+import time
+
 from src.contexto.contexto import Contexto
 from src.corrente_pipeline_comentarios.guardar_dados_comentarios_youtube_s3_corrente import \
     GuardarDadosYoutubeComentariosS3Corrente
@@ -13,6 +15,8 @@ from src.servicos.api_youtube.api_youtube import YoutubeAPI
 from src.servicos.banco.operacoes_banco import OperacoesBancoDuckDb
 from src.servicos.servico_s3.sevicos3 import ServicoS3
 from src.servicos.steam.steam_api import SteamAPI
+
+inicio = time.perf_counter()
 
 '''
 1631270 - Star Rupture
@@ -47,6 +51,8 @@ lista_jogos = [
     (304212, "euro_truck_simulator_scandinaavia"),
     (227310, "euro_truck_simulator_going_east"),
     (2780810, "euro_truck_simulator_nordic_horizons"),
+    (244850, "space_engineers"),
+
 ]
 lista_jogos_youtube = [
     ('WLilIKOJYi0', 'star_rupture'),
@@ -89,3 +95,7 @@ p7 = GuardarDadosYoutubeRespostaComentariosS3Corrente(
 p1.set_proxima_corrente(p2).set_proxima_corrente(p3).set_proxima_corrente(p4).set_proxima_corrente(
     p5).set_proxima_corrente(p6).set_proxima_corrente(p7)
 p1.corrente(contexto=contexto)
+fim = time.perf_counter()
+tempo_total = fim - inicio
+
+print(f"\n⏱ Tempo total de execução: {tempo_total:.4f} segundos")
