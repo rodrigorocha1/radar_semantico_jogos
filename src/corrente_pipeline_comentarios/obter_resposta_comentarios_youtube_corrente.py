@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Optional, List, Tuple
+from typing import Optional
 
 from src.contexto.contexto import Contexto
 from src.corrente_pipeline_comentarios.corrente import Corrente
@@ -7,9 +7,8 @@ from src.servicos.api_youtube.iapi_youtube import IApiYoutube
 
 
 class ObterRespostaComentariosYoutubeCorrente(Corrente):
-    def __init__(self, api_youtube: IApiYoutube, lista_jogos: List[Tuple[str, ...]]):
+    def __init__(self, api_youtube: IApiYoutube):
         self.__api_youtube = api_youtube
-        self.__lista_jogos = lista_jogos
         super().__init__()
 
     def executar_processo(self, contexto: Optional[Contexto] = None) -> bool:
