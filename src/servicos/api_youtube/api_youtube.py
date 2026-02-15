@@ -56,8 +56,7 @@ class YoutubeAPI(IApiYoutube):
             )
 
 
-            if next_page_token:
-                request = request.pageToken(next_page_token)
+
 
             response = request.execute()
 
