@@ -51,12 +51,19 @@ class YoutubeAPI(IApiYoutube):
                 part="snippet",
                 parentId=id_comentario,
                 maxResults=100,
-                textFormat="plainText"  # plainText ou html
+                textFormat="plainText",
+                pageToken=next_page_token# plainText ou html
             )
+
+
             if next_page_token:
                 request = request.pageToken(next_page_token)
+
             response = request.execute()
+
             yield from response.get("items", [])
+
+
             next_page_token = response.get("nextPageToken")
             if not next_page_token:
                 break
