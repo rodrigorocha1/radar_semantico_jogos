@@ -79,7 +79,16 @@ lista_jogos = [
     (1244460, "jurassic_world_evolution_dois"),
     (2958130, "jurassic_world_evolution_tres"),
     (703080, "planet_zoo"),
-    (1623730, "palword")
+    (3215050, "surviving_mars"),
+    (1066780, "transport_fever_dois"),
+    (1623730, "palword"),
+    (1601580, "Frostpunk_dois"),
+    (1984270, "Digiom_story_time_stranger"),
+    (323190, "frostpunk"),
+    (1125020, "frostpunk_the_rifts"),
+    (1146960, "frostpunk_the_last_autumn"),
+    (1147010, "frostpunk_on_the_edge"),
+    (2791510, "frostpunk_dois_fractured_utopias"),
 
 ]
 lista_jogos_youtube = [
