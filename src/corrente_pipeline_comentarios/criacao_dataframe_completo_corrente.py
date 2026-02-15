@@ -51,5 +51,6 @@ class CriacaoDataframeCompletoCorrente(Corrente):
         dataframe_comentarios_youtube = self.__criar_dataframe_youtube_comentarios()
         dataframe_resposta_comentarios = self.__criar_dataframe_youtube_resposta_comentarios()
         dataframe_completo = pd.concat([dataframe_steam, dataframe_resposta_comentarios,dataframe_comentarios_youtube])
+        dataframe_completo.to_pickle('dataframe_completo.pkl')
         contexto.dataframe_original = dataframe_completo
         return True

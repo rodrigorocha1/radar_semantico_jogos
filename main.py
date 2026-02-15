@@ -152,29 +152,41 @@ lista_jogos = [
 
 ]
 lista_jogos_youtube = [
-    ('WLilIKOJYi0', 'star_rupture'),
-    ('D1PDHTGNswI', 'star_rupture'),
-    ('9Ib27hgkG3s', 'star_rupture'),
-    ('xpo9nSt7Das', 'star_rupture'),
-    ('ri0cpSX2ero', 'star_rupture'),
-    ('0YfO99f2QSU', 'star_rupture'),
-    ('vZLYbXaaXLA', 'star_rupture'),
-    ('jxx8ue0SwnA', 'star_rupture'),
-    ('DvbJDTxb7is', 'star_rupture'),
-    ('w5yNWwJn7V8', 'star_rupture'),
-    ('xdZoDbeJ-oM', 'star_rupture'),
-    ('OvHk_itOugs', 'satisfactory'),
-    ('RHnmuA3Y9Qg', 'satisfactory'),
-    ('4oX_-JH0wVo', 'satisfactory'),
-    ('xyxT8o-JPhA', 'satisfactory'),
-    ('yB97xvhGf3s', 'satisfactory'),
-    ('lF0hBETvOuQ', 'satisfactory'),
-    ('jEFz4PVixrQ', 'satisfactory'),
-    ('7Ulg3PRYo80', 'satisfactory'),
-    ('HAYetmTD_og', 'no_mans_sky'),
-    ('ktsrYBZcXSE', 'no_mans_sky'),
-    ('3eox_HfBOck', 'no_mans_sky'),
-    ('04y9zgwsqU4', 'satisfactory')
+    # ('WLilIKOJYi0', 'star_rupture'),
+    # ('D1PDHTGNswI', 'star_rupture'),
+    # ('9Ib27hgkG3s', 'star_rupture'),
+    # ('xpo9nSt7Das', 'star_rupture'),
+    # ('ri0cpSX2ero', 'star_rupture'),
+    # ('0YfO99f2QSU', 'star_rupture'),
+    # ('vZLYbXaaXLA', 'star_rupture'),
+    # ('jxx8ue0SwnA', 'star_rupture'),
+    # ('DvbJDTxb7is', 'star_rupture'),
+    # ('w5yNWwJn7V8', 'star_rupture'),
+    # ('xdZoDbeJ-oM', 'star_rupture'),
+    # ('OvHk_itOugs', 'satisfactory'),
+    # ('RHnmuA3Y9Qg', 'satisfactory'),
+    # ('4oX_-JH0wVo', 'satisfactory'),
+    # ('xyxT8o-JPhA', 'satisfactory'),
+    # ('yB97xvhGf3s', 'satisfactory'),
+    # ('lF0hBETvOuQ', 'satisfactory'),
+    # ('jEFz4PVixrQ', 'satisfactory'),
+    # ('7Ulg3PRYo80', 'satisfactory'),
+    # ('HAYetmTD_og', 'no_mans_sky'),
+    # ('ktsrYBZcXSE', 'no_mans_sky'),
+    # ('3eox_HfBOck', 'no_mans_sky'),
+    # ('6XoSPVADxL8', 'no_mans_sky'),
+    # ('xjrV9d-ZVzg', 'no_mans_sky'),
+    # ('04y9zgwsqU4', 'satisfactory'),
+    ('YI6delmSrc0', 'subnautica'),
+    ('yWRaxYP-wns', 'subnautica'),
+    ('ubVYWktpNL0', 'subnautica'),
+    ('lYXT1si2c7U', 'subnautica'),
+    ('zp5fBG7T5tk', 'subnautica'),
+    ('zas4Oxz3Uvs', 'stellaris'),
+    ('HZZzO3pG8lE', 'factorio'),
+    ('OqU9tESMELk', 'factorio'),
+    ('yQiLF9D5TqU', 'factorio'),
+    ('Czlu0lBHJqQ', 'factorio'),
 ]
 steam_api = SteamAPI()
 servico_s3 = ServicoS3()
@@ -205,10 +217,10 @@ p7 = GuardarDadosYoutubeRespostaComentariosS3Corrente(
     servico_banco=servico_banco
 )
 
-# p1.set_proxima_corrente(p2).set_proxima_corrente(p3).set_proxima_corrente(p4).set_proxima_corrente(
-#     p5).set_proxima_corrente(p6).set_proxima_corrente(p7)
+p1.set_proxima_corrente(p2).set_proxima_corrente(p3).set_proxima_corrente(p4).set_proxima_corrente(
+    p5).set_proxima_corrente(p6).set_proxima_corrente(p7)
 
-p1.set_proxima_corrente(p2).set_proxima_corrente(p3)
+# p1.set_proxima_corrente(p2).set_proxima_corrente(p3)
 p1.corrente(contexto=contexto)
 fim = time.perf_counter()
 tempo_total = fim - inicio
