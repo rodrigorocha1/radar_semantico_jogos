@@ -17,6 +17,7 @@ class CriacaoDataframeCompletoCorrente(Corrente):
         caminho_base = f's3://{c.MINIO_BUCKET_PLN}/steam/bronze/reviews_steam/**/*.json'
         dataframe = self.__servico_banco.consultar_dados(id_consulta='1=1', caminho_consulta=caminho_base)
         dataframe = dataframe[['recommendationid', 'codigo_steam', 'nome_jogo', 'review']]
+        dataframe['site'] = 'steam'
         dataframe.rename(columns={'recommendationid': 'id_texto', 'review': 'texto_comentario'}, inplace=True)
         return dataframe
 
@@ -29,6 +30,7 @@ class CriacaoDataframeCompletoCorrente(Corrente):
         )
         dataframe = dataframe[['id', 'codigo_steam', 'nome_jogo', 'textDisplay']]
         dataframe.rename(columns={'id': 'id_texto', 'textDisplay': 'texto_comentario'}, inplace=True)
+        dataframe['site'] = 'youtube'
         return dataframe
 
     def __criar_dataframe_youtube_resposta_comentarios(self) -> pd.DataFrame:
@@ -41,7 +43,7 @@ class CriacaoDataframeCompletoCorrente(Corrente):
         )
         dataframe = dataframe[['id', 'codigo_steam', 'nome_jogo', 'textDisplay']]
         dataframe.rename(columns={'id': 'id_texto', 'textDisplay': 'texto_comentario'}, inplace=True)
-
+        dataframe['site'] = 'youtube'
         return dataframe
 
     def executar_processo(self, contexto: Contexto) -> bool:
@@ -49,6 +51,5 @@ class CriacaoDataframeCompletoCorrente(Corrente):
         dataframe_comentarios_youtube = self.__criar_dataframe_youtube_comentarios()
         dataframe_resposta_comentarios = self.__criar_dataframe_youtube_resposta_comentarios()
         dataframe_completo = pd.concat([dataframe_steam, dataframe_resposta_comentarios,dataframe_comentarios_youtube])
-        print(dataframe_completo.head())
-
+        contexto.dataframe_original = dataframe_completo
         return True
