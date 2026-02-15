@@ -53,7 +53,33 @@ lista_jogos = [
     (2780810, "euro_truck_simulator_nordic_horizons"),
     (244850, "space_engineers"),
     (255710, "cities_skylines"),
+    (264710, "subnautica"),
+    (848450, "subnautica_bellow_zero"),
     (949230, "cities_skylines_dois"),
+    (105600, "terraria"),
+    (815370, "green_hell"),
+    (396750, "everspace"),
+    (1128920, "everspace_dois"),
+    (281990, "stellaris"),
+    (1363080, "manor_lords"),
+    (108600, "project_zomboid"),
+    (1149460, "icarus"),
+    (361420, "astonomer"),
+    (1172710, "dune_awakening"),
+    (2570210, "eden_crafters"),
+    (1203620, "enshrouded"),
+    (1062090, "timberborn"),
+    (1465470, "the_Crust"),
+    (1783560, "the_last_caretaker"),
+    (427520, "factorio"),
+    (544550, "stationeers"),
+    (2139460, "once_human"),
+    (1466860, "age_of_empires_iv"),
+    (1934680, "age_of_mythology_rethold"),
+    (1244460, "jurassic_world_evolution_dois"),
+    (2958130, "jurassic_world_evolution_tres"),
+    (703080, "planet_zoo"),
+    (1623730, "palword")
 
 ]
 lista_jogos_youtube = [
@@ -107,8 +133,10 @@ p7 = GuardarDadosYoutubeRespostaComentariosS3Corrente(
     servico_banco=servico_banco
 )
 
-p1.set_proxima_corrente(p2).set_proxima_corrente(p3).set_proxima_corrente(p4).set_proxima_corrente(
-    p5).set_proxima_corrente(p6).set_proxima_corrente(p7)
+# p1.set_proxima_corrente(p2).set_proxima_corrente(p3).set_proxima_corrente(p4).set_proxima_corrente(
+#     p5).set_proxima_corrente(p6).set_proxima_corrente(p7)
+
+p1.set_proxima_corrente(p2).set_proxima_corrente(p3)
 p1.corrente(contexto=contexto)
 fim = time.perf_counter()
 tempo_total = fim - inicio
