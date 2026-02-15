@@ -171,6 +171,9 @@ lista_jogos_youtube = [
     ('lF0hBETvOuQ', 'satisfactory'),
     ('jEFz4PVixrQ', 'satisfactory'),
     ('7Ulg3PRYo80', 'satisfactory'),
+    ('HAYetmTD_og', 'no_mans_sky'),
+    ('ktsrYBZcXSE', 'no_mans_sky'),
+    ('3eox_HfBOck', 'no_mans_sky'),
     ('04y9zgwsqU4', 'satisfactory')
 ]
 steam_api = SteamAPI()
