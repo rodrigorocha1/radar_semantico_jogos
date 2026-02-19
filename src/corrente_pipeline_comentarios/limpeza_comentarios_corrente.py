@@ -22,7 +22,7 @@ class LimpezaComentariosCorrente(Corrente):
             self.__processador_texto.processar
         )
         self.__processador_texto.estrategia = TratamentoSpacy()
-        tokens_resultado, entidades_resultado, comentario_limpo = self.__processador_texto.processar(
+        tokens_resultado, entidades_resultado, comentario_limpo, embedings = self.__processador_texto.processar(
             dataframe_original['comentario_limpo'].tolist()
         )
 
@@ -32,6 +32,8 @@ class LimpezaComentariosCorrente(Corrente):
         dataframe_original['entidades_texto'] = [[e[0] for e in ent_list] for ent_list in entidades_resultado]
         dataframe_original['entidades_label'] = [[e[1] for e in ent_list] for ent_list in entidades_resultado]
         dataframe_original['comentarios_limpos'] = comentario_limpo
+        dataframe_original['embedings'] = embedings
+        dataframe_original.to_csv('teste.csv', sep='|')
         print(dataframe_original.head(10))
 
         return True
