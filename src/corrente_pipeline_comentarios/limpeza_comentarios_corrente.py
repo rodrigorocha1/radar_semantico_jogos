@@ -33,7 +33,7 @@ class LimpezaComentariosCorrente(Corrente):
         dataframe_original['entidades_label'] = [[e[1] for e in ent_list] for ent_list in entidades_resultado]
         dataframe_original['comentarios_limpos'] = comentario_limpo
         dataframe_original['embedings'] = embedings
-        dataframe_original.to_csv('teste.csv', sep='|')
+
         print(dataframe_original.head(10))
 
         return True
