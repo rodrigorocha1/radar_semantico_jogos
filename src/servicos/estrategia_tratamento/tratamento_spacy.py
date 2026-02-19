@@ -1,27 +1,39 @@
-from typing import List, Tuple
+from typing import List, Tuple, Literal
+
 import spacy
 
-class TratamentoSpacy:
+from src.servicos.estrategia_tratamento.itratatamento import ITratamento
 
-    def __init__(self):
-        # Carrega modelo de português
+
+class TratamentoSpacy(ITratamento):
+
+    def __init__(self, comentario: str):
+        self.__comentario = comentario
         self.__nlp = spacy.load("pt_core_news_sm")
+        self.__docs = self.__nlp.pipe(self.__comentario, batch_size=1000, n_process=1)
+
+    @property
+    def comentario(self) -> str:
+        return self.__comentario
+
+    @comentario.setter
+    def comentario(self, novo_comentario: str) -> None:
+        self.__comentario = novo_comentario
 
     def __gerar_tokens(
-        self, comentarios: List[str]
-    ) -> Tuple[List[List[Tuple[str, bool]]], List[str]]:
+            self
+    ) -> Tuple[List[List[Tuple[str, Literal[False]]]], List[str]]:
         """
         Método para gerar tokens
-        :param comentarios: comentários de vídeos steam
-        :type comentarios:  str
+
         :return: tokens tratados
-        :rtype: Tuple[List[List[Tuple[str, bool]]], List[str]]
+        :rtype: Tuple[List[List[Tuple[str, bool]]], List[str]]:
         """
-        docs = self.__nlp.pipe(comentarios, batch_size=1000, n_process=1)
+
         tokens_resultado = []
         comentarios_limpos = []
 
-        for doc in docs:
+        for doc in self.__docs:
             tokens_filtrados = [
                 (token.lemma_, token.is_punct)
                 for token in doc
@@ -37,7 +49,7 @@ class TratamentoSpacy:
 
         return tokens_resultado, comentarios_limpos
 
-    def __gerar_entidades(self, comentarios: List[str]) -> List[List[Tuple[str, str]]]:
+    def __gerar_entidades(self) -> List[List[Tuple[str, str]]]:
         """
         Gerar entidades nomeadas
         :param comentarios: comentários dos vídeos
@@ -45,18 +57,18 @@ class TratamentoSpacy:
         :return: entidades nomeadas
         :rtype: str
         """
-        docs = self.__nlp.pipe(comentarios, batch_size=1000, n_process=1)
+
         entidades_resultado = []
 
-        for doc in docs:
+        for doc in self.__docs:
             entidades = [(ent.text, ent.label_) for ent in doc.ents]
             entidades_resultado.append(entidades)
 
         return entidades_resultado
 
     def executar_tratamento(
-        self, comentarios: List[str]
-    ) -> Tuple[List[List[Tuple[str, bool]]], List[List[Tuple[str, str]]], List[str]]:
+            self
+    ) -> Tuple[List[List[Tuple[str, Literal[False]]]], List[List[Tuple[str, str]]], List[str]]:
         """
         Executa os tratamentos dos comentários
         :param comentarios:comentários
@@ -64,7 +76,7 @@ class TratamentoSpacy:
         :return: comentários tratados
         :rtype: str
         """
-        tokens, comentario_limpo = self.__gerar_tokens(comentarios)
-        entidades = self.__gerar_entidades(comentarios)
+        tokens, comentario_limpo = self.__gerar_tokens()
+        entidades = self.__gerar_entidades()
 
         return tokens, entidades, comentario_limpo
