@@ -32,6 +32,6 @@ class LimpezaComentariosCorrente(Corrente):
         dataframe_original['entidades_texto'] = [[e[0] for e in ent_list] for ent_list in entidades_resultado]
         dataframe_original['entidades_label'] = [[e[1] for e in ent_list] for ent_list in entidades_resultado]
         dataframe_original['comentarios_limpos'] = comentario_limpo
-        print(dataframe_original.loc[6])
+        print(dataframe_original.head(10))
 
         return True
