@@ -8,7 +8,7 @@ T = TypeVar("T")
 class ProcessadorTexto(Generic[T]):
 
     def __init__(self):
-        self._estrategia = None
+        self._estrategia: Optional[ITratamento[T]] = None
 
     @property
     def estrategia(self) -> Optional[ITratamento[T]]:
@@ -19,4 +19,6 @@ class ProcessadorTexto(Generic[T]):
         self._estrategia = nova_estrategia
 
     def processar(self, comentario: str) -> T:
+        if self._estrategia is None:
+            raise ValueError("Estratégia de tratamento não foi definida.")
         return self._estrategia.executar_tratamento(comentario)
