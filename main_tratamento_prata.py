@@ -7,6 +7,7 @@ from src.corrente_pipeline_comentarios.guardar_dados_comentarios_youtube_s3_corr
 from src.corrente_pipeline_comentarios.guardar_dados_resposta_comentarios_youtube_s3_corrente import \
     GuardarDadosYoutubeRespostaComentariosS3Corrente
 from src.corrente_pipeline_comentarios.guardar_dados_steam_s3_corrente import GuardarDadosSteam3Corrente
+from src.corrente_pipeline_comentarios.limpeza_comentarios_corrente import LimpezaComentariosCorrente
 from src.corrente_pipeline_comentarios.obter_comentarios_steam_corrente import ObterComentariosSteamCorrente
 from src.corrente_pipeline_comentarios.obter_comentarios_youtube_corrente import ObterComentariosYoutubeCorrente
 from src.corrente_pipeline_comentarios.obter_resposta_comentarios_youtube_corrente import \
@@ -28,7 +29,9 @@ servico_banco = OperacoesBancoDuckDb()
 api_youtube = YoutubeAPI()
 
 p1 = CriacaoDataframeCompletoCorrente(servico_banco=servico_banco)
+p2 = LimpezaComentariosCorrente()
 
+p1.set_proxima_corrente(p2)
 p1.corrente(contexto)
 fim = time.perf_counter()
 tempo_total = fim - inicio
