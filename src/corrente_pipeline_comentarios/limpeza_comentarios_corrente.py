@@ -26,7 +26,7 @@ class LimpezaComentariosCorrente(Corrente):
             dataframe_original['comentario_limpo'].tolist()
         )
 
-        # Cria colunas dinâmicas
+
         dataframe_original['lemma'] = [[t[0] for t in token_list] for token_list in tokens_resultado]
         dataframe_original['punct'] = [[t[1] for t in token_list] for token_list in tokens_resultado]
         dataframe_original['entidades_texto'] = [[e[0] for e in ent_list] for ent_list in entidades_resultado]
