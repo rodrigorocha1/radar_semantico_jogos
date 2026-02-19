@@ -5,7 +5,7 @@ import emoji
 from src.servicos.estrategia_tratamento.itratatamento import ITratamento
 
 
-class TratamentoSimples(ITratamento[str]):
+class TratamentoSimples(ITratamento[str, str]):
 
     @staticmethod
     def __remover_links(comentario: str) -> str:

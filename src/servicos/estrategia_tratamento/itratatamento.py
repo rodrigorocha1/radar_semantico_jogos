@@ -1,8 +1,8 @@
 from typing import Protocol, TypeVar
 
-T_co = TypeVar("T_co", covariant=True)
+E = TypeVar("E", contravariant=True)
+T = TypeVar("T", covariant=True)
 
-
-class ITratamento(Protocol[T_co]):
-    def executar_tratamento(self, comentario: str) -> T_co:
+class ITratamento(Protocol[E, T]):
+    def executar_tratamento(self, comentario: E) -> T:
         ...
