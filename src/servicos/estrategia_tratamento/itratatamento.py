@@ -1,5 +1,3 @@
-# itratatamento.py
-
 from typing import Protocol, TypeVar
 
 T_co = TypeVar("T_co", covariant=True)
