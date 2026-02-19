@@ -1,10 +1,9 @@
-import pandas as pd
-
 from src.contexto.contexto import Contexto
 from src.corrente_pipeline_comentarios.corrente import Corrente
 from src.servicos.estrategia_tratamento.processador_texto import ProcessadorTexto
 from src.servicos.estrategia_tratamento.tratamento_simples import TratamentoSimples
 from src.servicos.estrategia_tratamento.tratamento_spacy import TratamentoSpacy
+import pandas as pd
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
@@ -18,26 +17,21 @@ class LimpezaComentariosCorrente(Corrente):
 
     def executar_processo(self, contexto: Contexto) -> bool:
         dataframe_original = contexto.dataframe_original
-        self.__processador_texto.estrategia = TratamentoSimples(comentario="")
-        dataframe_original['comentario_limpo'] = self.__processador_texto.processar(
-            dados=dataframe_original['texto_comentario'].tolist()
+        self.__processador_texto.estrategia = TratamentoSimples()
+        dataframe_original['comentario_limpo'] = dataframe_original['texto_comentario'].apply(
+            self.__processador_texto.processar
         )
-        print(dataframe_original['comentario_limpo'].tolist())
-
-
-        self.__processador_texto.estrategia = TratamentoSpacy(comentario="")
-        a = self.__processador_texto.processar(
-            dataframe_original['comentario_limpo']
+        self.__processador_texto.estrategia = TratamentoSpacy()
+        tokens_resultado, entidades_resultado, comentario_limpo = self.__processador_texto.processar(
+            dataframe_original['comentario_limpo'].tolist()
         )
 
-        print(a[0])
 
-        # # Cria colunas dinâmicas
-        # dataframe_original['lemma'] = [[t[0] for t in token_list] for token_list in tokens_resultado]
-        # dataframe_original['punct'] = [[t[1] for t in token_list] for token_list in tokens_resultado]
-        # dataframe_original['entidades_texto'] = [[e[0] for e in ent_list] for ent_list in entidades_resultado]
-        # dataframe_original['entidades_label'] = [[e[1] for e in ent_list] for ent_list in entidades_resultado]
-        # dataframe_original['comentarios_limpos'] =
-        # print(dataframe_original.loc[6])
+        dataframe_original['lemma'] = [[t[0] for t in token_list] for token_list in tokens_resultado]
+        dataframe_original['punct'] = [[t[1] for t in token_list] for token_list in tokens_resultado]
+        dataframe_original['entidades_texto'] = [[e[0] for e in ent_list] for ent_list in entidades_resultado]
+        dataframe_original['entidades_label'] = [[e[1] for e in ent_list] for ent_list in entidades_resultado]
+        dataframe_original['comentarios_limpos'] = comentario_limpo
+        print(dataframe_original.loc[6])
 
         return True
