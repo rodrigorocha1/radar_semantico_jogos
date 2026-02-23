@@ -1,5 +1,6 @@
+import os
+import sys
+
 import pandas as pd
 
-base = pd.read_csv('teste.csv', sep='|')
-
-
+print("Iniciando o tratamento dos dados...")

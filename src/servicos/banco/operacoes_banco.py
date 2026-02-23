@@ -23,13 +23,16 @@ class OperacoesBancoDuckDb(IoperacoesBanco):
     def consultar_dados(self, id_consulta: str, caminho_consulta: str) -> pd.DataFrame:
         query = f"""
             SELECT *
-            FROM read_json_auto(?)
+            FROM read_json_auto(?, 
+            union_by_name = true)
             WHERE {id_consulta}
         """
 
         # Apenas caminho_consulta como parâmetro
         result = self.__con.execute(query, [caminho_consulta])
+
         df = result.fetchdf()
+        print(df.head())
         return df
 
 

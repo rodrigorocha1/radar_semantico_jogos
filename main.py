@@ -5,12 +5,16 @@ from src.corrente_pipeline_comentarios.guardar_dados_comentarios_youtube_s3_corr
     GuardarDadosYoutubeComentariosS3Corrente
 from src.corrente_pipeline_comentarios.guardar_dados_resposta_comentarios_youtube_s3_corrente import \
     GuardarDadosYoutubeRespostaComentariosS3Corrente
-from src.corrente_pipeline_comentarios.guardar_dados_steam_s3_corrente import GuardarDadosSteam3Corrente
-from src.corrente_pipeline_comentarios.obter_comentarios_steam_corrente import ObterComentariosSteamCorrente
-from src.corrente_pipeline_comentarios.obter_comentarios_youtube_corrente import ObterComentariosYoutubeCorrente
+from src.corrente_pipeline_comentarios.guardar_dados_steam_s3_corrente import \
+    GuardarDadosSteam3Corrente
+from src.corrente_pipeline_comentarios.obter_comentarios_steam_corrente import \
+    ObterComentariosSteamCorrente
+from src.corrente_pipeline_comentarios.obter_comentarios_youtube_corrente import \
+    ObterComentariosYoutubeCorrente
 from src.corrente_pipeline_comentarios.obter_resposta_comentarios_youtube_corrente import \
     ObterRespostaComentariosYoutubeCorrente
-from src.corrente_pipeline_comentarios.verificar_conexao_api_steam_corrente import VerificarConexaoApiSteamCorrente
+from src.corrente_pipeline_comentarios.verificar_conexao_api_steam_corrente import \
+    VerificarConexaoApiSteamCorrente
 from src.servicos.api_youtube.api_youtube import YoutubeAPI
 from src.servicos.banco.operacoes_banco import OperacoesBancoDuckDb
 from src.servicos.servico_s3.sevicos3 import ServicoS3

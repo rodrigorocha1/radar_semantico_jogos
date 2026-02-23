@@ -34,6 +34,5 @@ class LimpezaComentariosCorrente(Corrente):
         dataframe_original['comentarios_limpos'] = comentario_limpo
         dataframe_original['embedings'] = embedings
 
-        print(dataframe_original.head(10))
-
+        contexto.dataframe_prata = dataframe_original
         return True

@@ -1,3 +1,4 @@
+import duckdb
 import pandas as pd
 
 from src.contexto.contexto import Contexto
@@ -15,34 +16,55 @@ class CriacaoDataframeCompletoCorrente(Corrente):
 
     def __criar_dataframe_steam(self) -> pd.DataFrame:
         caminho_base = f's3://{c.MINIO_BUCKET_PLN}/steam/bronze/reviews_steam/**/*.json'
-        dataframe = self.__servico_banco.consultar_dados(id_consulta='1=1', caminho_consulta=caminho_base)
-        dataframe = dataframe[['recommendationid', 'codigo_steam', 'nome_jogo', 'review']]
+
+        con = duckdb.connect()
+        con.execute("INSTALL httpfs; LOAD httpfs;")
+        con.execute(f"SET s3_region='{c.AWS_REGION}';")
+        con.execute(f"SET s3_access_key_id='{c.MINIO_ACCESS_KEY}';")
+        con.execute(f"SET s3_secret_access_key='{c.MINIO_SECRET_KEY}';")
+        con.execute(f"SET s3_endpoint='{c.MINIO_HOST_URL_DUCKDB}';")
+        con.execute("SET s3_use_ssl=false; SET s3_url_style='path';")
+
+        dataframe = con.execute(
+            f"SELECT * FROM read_json_auto('{caminho_base}', union_by_name=true)").fetchdf()
+
+        dataframe = dataframe[['recommendationid',
+                               'codigo_steam', 'nome_jogo', 'review']]
         dataframe['site'] = 'steam'
-        dataframe.rename(columns={'recommendationid': 'id_texto', 'review': 'texto_comentario'}, inplace=True)
+        dataframe.rename(columns={
+                         'recommendationid': 'id_texto', 'review': 'texto_comentario'}, inplace=True)
         return dataframe
 
     def __criar_dataframe_youtube_comentarios(self) -> pd.DataFrame:
         caminho_base = f's3://{c.MINIO_BUCKET_PLN}/youtube/bronze/comentarios_youtube/**/*.json'
-        dataframe = self.__servico_banco.consultar_dados(caminho_consulta=caminho_base, id_consulta="1=1")
-        dataframe["codigo_steam"] = dataframe["nome_jogo"].map(self.__jogos_dict_invertido)
+        dataframe = self.__servico_banco.consultar_dados(
+            caminho_consulta=caminho_base, id_consulta="1=1")
+        dataframe["codigo_steam"] = dataframe["nome_jogo"].map(
+            self.__jogos_dict_invertido)
         dataframe["textDisplay"] = dataframe["snippet"].apply(
             lambda x: x["topLevelComment"]["snippet"]["textDisplay"]
         )
-        dataframe = dataframe[['id', 'codigo_steam', 'nome_jogo', 'textDisplay']]
-        dataframe.rename(columns={'id': 'id_texto', 'textDisplay': 'texto_comentario'}, inplace=True)
+        dataframe = dataframe[[
+            'id', 'codigo_steam', 'nome_jogo', 'textDisplay']]
+        dataframe.rename(
+            columns={'id': 'id_texto', 'textDisplay': 'texto_comentario'}, inplace=True)
         dataframe['site'] = 'youtube'
         return dataframe
 
     def __criar_dataframe_youtube_resposta_comentarios(self) -> pd.DataFrame:
         caminho_base = f's3://{c.MINIO_BUCKET_PLN}/youtube/bronze/resposta_comentarios_youtube/**/*.json'
-        dataframe = self.__servico_banco.consultar_dados(id_consulta="1=1", caminho_consulta=caminho_base)
-        dataframe["codigo_steam"] = dataframe["nome_jogo"].map(self.__jogos_dict_invertido)
+        dataframe = self.__servico_banco.consultar_dados(
+            id_consulta="1=1", caminho_consulta=caminho_base)
+        dataframe["codigo_steam"] = dataframe["nome_jogo"].map(
+            self.__jogos_dict_invertido)
 
         dataframe["textDisplay"] = dataframe["snippet"].apply(
             lambda x: x["textDisplay"]
         )
-        dataframe = dataframe[['id', 'codigo_steam', 'nome_jogo', 'textDisplay']]
-        dataframe.rename(columns={'id': 'id_texto', 'textDisplay': 'texto_comentario'}, inplace=True)
+        dataframe = dataframe[[
+            'id', 'codigo_steam', 'nome_jogo', 'textDisplay']]
+        dataframe.rename(
+            columns={'id': 'id_texto', 'textDisplay': 'texto_comentario'}, inplace=True)
         dataframe['site'] = 'youtube'
         return dataframe
 
@@ -50,7 +72,9 @@ class CriacaoDataframeCompletoCorrente(Corrente):
         dataframe_steam = self.__criar_dataframe_steam()
         dataframe_comentarios_youtube = self.__criar_dataframe_youtube_comentarios()
         dataframe_resposta_comentarios = self.__criar_dataframe_youtube_resposta_comentarios()
-        dataframe_completo = pd.concat([dataframe_steam, dataframe_resposta_comentarios,dataframe_comentarios_youtube])
-        dataframe_completo.to_pickle('dataframe_completo.pkl')
+        dataframe_completo = pd.concat(
+            [dataframe_steam, dataframe_resposta_comentarios,
+                dataframe_comentarios_youtube]
+        )
         contexto.dataframe_original = dataframe_completo
         return True
