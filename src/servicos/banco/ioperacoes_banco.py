@@ -17,3 +17,12 @@ class IoperacoesBanco(ABC):
         :rtype: pd.Dataframe
         """
         pass
+
+    @abstractmethod
+    def guardar_dados(self, dados: pd.DataFrame):
+        """
+        Método para guardar dados processados
+        :param dados: dataframe com os dados a serem guardados
+        :type dados: pd.DataFrame
+        """
+        pass

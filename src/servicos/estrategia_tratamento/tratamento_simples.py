@@ -1,6 +1,8 @@
 import re
 import emoji
 from src.servicos.estrategia_tratamento.itratatamento import ITratamento
+import string
+import unicodedata
 
 
 class TratamentoSimples(ITratamento[str, str]):
@@ -33,7 +35,8 @@ class TratamentoSimples(ITratamento[str, str]):
     @staticmethod
     def __remover_acentos(comentario: str) -> str:
         comentario_normalizado = unicodedata.normalize('NFKD', comentario)
-        comentario_ascii = comentario_normalizado.encode('ASCII', 'ignore').decode('utf-8')
+        comentario_ascii = comentario_normalizado.encode(
+            'ASCII', 'ignore').decode('utf-8')
         return comentario_ascii
 
     def executar_tratamento(self, comentario) -> str:
