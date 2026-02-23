@@ -1,5 +1,6 @@
 import duckdb
 import pandas as pd
+from datetime import datetime
 
 from src.servicos.banco.ioperacoes_banco import IoperacoesBanco
 from src.servicos.config.config import Config
@@ -19,7 +20,7 @@ class OperacoesBancoDuckDb(IoperacoesBanco):
                 SET s3_use_ssl=false;
                 SET s3_url_style='path';
             """)
-        self.__caminho_s3_prata = f's3://{Config.MINIO_BUCKET_PLN}/comentarios/prata/comentarios_limpos.csv'
+        self.__caminho_s3_prata = f's3://{Config.MINIO_BUCKET_PLN}/comentarios/prata/comentarios_limpos_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.csv'
 
     def consultar_dados(self, id_consulta: str, caminho_consulta: str) -> pd.DataFrame:
         query = f"""
