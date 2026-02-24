@@ -25,7 +25,7 @@ comentarios = [
 embeddings = np.array(
     [nlp(text).vector for text in comentarios], dtype=np.float32)
 print("Shape embeddings:", embeddings.shape)
-
+print("Exemplo embedding:", embeddings[0][:5])  # Exibe os primeiros 5 valores do primeiro embedding
 
 batch_size = 16
 dataset = tf.data.Dataset.from_tensor_slices(
