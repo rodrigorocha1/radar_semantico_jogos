@@ -1,6 +1,8 @@
+import os
+from datetime import datetime
+
 import duckdb
 import pandas as pd
-from datetime import datetime
 
 from src.servicos.banco.ioperacoes_banco import IoperacoesBanco
 from src.servicos.config.config import Config
@@ -23,18 +25,24 @@ class OperacoesBancoDuckDb(IoperacoesBanco):
         self.__caminho_s3_prata = f's3://{Config.MINIO_BUCKET_PLN}/comentarios/prata/comentarios_limpos_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.csv'
 
     def consultar_dados(self, id_consulta: str, caminho_consulta: str) -> pd.DataFrame:
+        extensao = os.path.splitext(caminho_consulta)[1].lower()
+        print(f"Extensão do arquivo: {extensao}")
+
+        if extensao == ".json":
+            reader = "read_json_auto(?)"
+        elif extensao == ".csv":
+            reader = "read_csv_auto(?)"
+        else:
+            raise ValueError(f"Formato não suportado: {extensao}")
+
         query = f"""
             SELECT *
-            FROM read_json_auto(?, 
-            union_by_name = true)
+            FROM {reader}
             WHERE {id_consulta}
         """
 
-        # Apenas caminho_consulta como parâmetro
         result = self.__con.execute(query, [caminho_consulta])
-
         df = result.fetchdf()
-        print(df.head())
         return df
 
     def guardar_dados(self, dados: pd.DataFrame):

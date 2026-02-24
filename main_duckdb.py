@@ -50,4 +50,4 @@ file_path = "s3://extracao/steam/bronze/reviews_steam/jogo_1631270/*.json"
 steamid_to_filter = "76561197979398614"
 
 df = read_from_minio(file_path, file_type="json", steamid_to_filter=steamid_to_filter)
-print(df.head())
+print(df.shape())

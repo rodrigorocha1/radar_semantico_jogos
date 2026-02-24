@@ -9,3 +9,4 @@ minio-data/*
 praticas_tensor_flow/*
 notebooks/logs/*
 web/*
+logs/*
