@@ -25,7 +25,8 @@ comentarios = [
 embeddings = np.array(
     [nlp(text).vector for text in comentarios], dtype=np.float32)
 print("Shape embeddings:", embeddings.shape)
-print("Exemplo embedding:", embeddings[0][:5])  # Exibe os primeiros 5 valores do primeiro embedding
+# Exibe os primeiros 5 valores do primeiro embedding
+print("Exemplo embedding:", embeddings[0][:5])
 
 batch_size = 16
 dataset = tf.data.Dataset.from_tensor_slices(
@@ -50,18 +51,22 @@ som.treinar(
 
 
 indices_bmu, coordenadas = som.mapear(embeddings)
+print(indices_bmu, coordenadas)
 
 rotulos = som.rotular_por_centroide(
     textos=comentarios,
     embeddings=embeddings,
     min_docs=3  # neurônios com menos de 3 comentários são ignorados
 )
-print(rotulos)
-print(som.erro_quantizacao(embeddings))
 
 # Exibir neurônios rotulados
 for neuronio, label in rotulos.items():
     print(f"Neurônio {neuronio}: {label}")
+
+
+for neuronio, label in rotulos.items():
+    i, j = som.localizacoes[neuronio].numpy().astype(int)
+    print(f"({i}, {j}): ['{label}']")
 
 
 u_matrix = som.calcular_u_matrix()
