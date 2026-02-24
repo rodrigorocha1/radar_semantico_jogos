@@ -4,6 +4,7 @@ import datetime
 import os
 from typing import Dict, List, Literal, Optional, Tuple
 
+from matplotlib import pyplot as plt
 import numpy as np
 import tensorflow as tf
 from tqdm.auto import tqdm
@@ -373,3 +374,24 @@ class SOM(tf.Module):
         coordenadas = tf.gather(self.localizacoes, indices_bmu)
 
         return indices_bmu, coordenadas
+
+    def plotar_decay(self, num_epocas: int, num_batches: int):
+        """
+        Plota o decaimento da taxa de aprendizado e do sigma ao longo do treinamento.
+        """
+        total_passos = num_epocas * num_batches
+        passos = np.arange(total_passos)
+
+        # Decaimento exponencial
+        taxa = self.taxa_aprendizado * np.exp(-passos / total_passos)
+        sigma = self.sigma * np.exp(-passos / total_passos)
+
+        plt.figure(figsize=(10, 5))
+        plt.plot(passos, taxa, label='Taxa de Aprendizado')
+        plt.plot(passos, sigma, label='Sigma (Vizinhança)')
+        plt.xlabel('Passos de Treinamento')
+        plt.ylabel('Valor')
+        plt.title('Decaimento da Taxa de Aprendizado e Sigma do SOM')
+        plt.grid(True)
+        plt.legend()
+        plt.show()
