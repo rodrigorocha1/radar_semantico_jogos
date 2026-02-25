@@ -39,7 +39,7 @@ dataframe_comentarios['is_english'] = dataframe_comentarios['texto_comentario'].
 dataframe_comentarios = dataframe_comentarios.drop(
     dataframe_comentarios[dataframe_comentarios['is_english']].index)
 
-
+dataframe_comentarios = dataframe_comentarios.dropna()
 print(dataframe_comentarios['is_english'].value_counts())
 
 dataframe_comentarios = dataframe_comentarios.head(300)
