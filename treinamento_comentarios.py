@@ -1,14 +1,16 @@
 import ast
+import json
 import math
+from typing import cast
 
 import mlflow
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from langdetect import detect
-# import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 
-# from src.modelo.modelo_som import SOM
+from src.modelo.modelo_som import SOM
 from src.servicos.banco.operacoes_banco import OperacoesBancoDuckDb
 
 a = 1
@@ -40,14 +42,14 @@ dataframe_comentarios = dataframe_comentarios.drop(
     dataframe_comentarios[dataframe_comentarios['is_english']].index)
 
 dataframe_comentarios = dataframe_comentarios.dropna()
-print(dataframe_comentarios['is_english'].value_counts())
 
-dataframe_comentarios = dataframe_comentarios.head(300)
+
+dataframe_comentarios = dataframe_comentarios.head(100)
 # print(dataframe_comentarios.shape)
 
 
 total_neuronios = 5 * math.sqrt(dataframe_comentarios.shape[0])
-print(int(total_neuronios))  # 20 * 20
+
 tamnho_batch = 64
 dataframe_comentarios["embedings"] = dataframe_comentarios["embedings"].apply(
     ast.literal_eval
@@ -56,86 +58,112 @@ dataframe_comentarios["embedings"] = dataframe_comentarios["embedings"].apply(
 
 batches = dataframe_comentarios.shape[0] // tamnho_batch
 
-print(batches)
 
 epocas = 4000 // 102
 
-
-print(dataframe_comentarios.columns)
 
 scaler = StandardScaler()
 
 embeddings_nomr = scaler.fit_transform(
     dataframe_comentarios['embedings'].tolist())
 
-# dataset = (
-#     tf.data.Dataset
-#     .from_tensor_slices(embeddings_nomr.astype(np.float32))
-#     .shuffle(buffer_size=len(embeddings_nomr))
-#     .batch(64)
-# )
-# som = SOM(
-#     linhas=20,
-#     colunas=20,
-#     dimensao=300,
-#     taxa_aprendizado=0.5,
-#     metrica="cosseno"
-# )
-# som.treinar(
-#     dataset=dataset,
-#     epocas=40,
-#     calcular_erro=True,
-#     dados_completos=embeddings_nomr
-# )
+dataset = (
+    tf.data.Dataset
+    .from_tensor_slices(embeddings_nomr.astype(np.float32))
+    .shuffle(buffer_size=len(embeddings_nomr))
+    .batch(64)
+)
+som = SOM(
+    linhas=20,
+    colunas=20,
+    dimensao=300,
+    taxa_aprendizado=0.5,
+    metrica="cosseno"
+)
+som.treinar(
+    dataset=dataset,
+    epocas=40,
+    calcular_erro=True,
+    dados_completos=embeddings_nomr
+)
 
-# rotulos = som.rotular_por_centroide(
-#     textos=dataframe_comentarios['texto_comentario'].tolist(),
-#     embeddings=embeddings_nomr,
-#     min_docs=3  # neurônios com menos de 3 comentários são ignorados
-# )
-# print(rotulos)
+rotulos = som.rotular_por_centroide(
+    textos=dataframe_comentarios['texto_comentario'].tolist(),
+    embeddings=embeddings_nomr,
+    min_docs=3  # neurônios com menos de 3 comentários são ignorados
+)
+rotulos = {str(k): v for k, v in rotulos.items()}
+mlflow.log_dict(rotulos, "rotulos/rotulos_neuronios.json")
 
-
-# indices, coordenadas = som.mapear(embeddings_nomr)
-# print("Índices dos neurônios para cada comentário:", indices)
-# print("Coordenadas dos neurônios para cada comentário:", coordenadas)
-# # Exibir neurônios rotulados
-# # for neuronio, label in rotulos.items():
-# #     print(f"Neurônio {neuronio}: {label}")
-
-# for neuronio, label in rotulos.items():
-#     i, j = som.localizacoes[neuronio].numpy().astype(int)
-#     print(f"({i}, {j}): ['{label}']")
+indices, coordenadas = som.mapear(embeddings_nomr)
 
 
-# u_matrix = som.calcular_u_matrix()
-# grid_labels = np.full((som.linhas, som.colunas), "", dtype=object)
-
-# for neuronio, label in rotulos.items():
-#     i, j = som.localizacoes[neuronio].numpy().astype(int)
-#     grid_labels[i, j] = label
+u_matrix = som.calcular_u_matrix()
 
 
-# som.plotar_decay(num_epocas=15, num_batches=sum(1 for _ in dataset))
-# amostra_embeddings = embeddings_nomr[:5]
+grid_labels = np.full((som.linhas, som.colunas), "", dtype=object)
 
-# som.registrar_modelo_mlflow(
-#     nome_modelo="som_portugues",
-#     exemplo_entrada=amostra_embeddings
-# )
 
-# indices_np = indices.numpy()
-# coordenadas_np = coordenadas.numpy()
+som.plotar_decay(num_epocas=15, num_batches=sum(1 for _ in dataset))
+amostra_embeddings = embeddings_nomr[:5]
 
-# fontes = dataframe_comentarios["site"].values
+som.registrar_modelo_mlflow(
+    nome_modelo="som_portugues",
+    exemplo_entrada=amostra_embeddings
+)
+som.gerar_summary_mlflow()
+indices_np = indices.numpy()
+coordenadas_np = coordenadas.numpy()
 
-# som.plotar_heatmap_plataformas(
-#     indices_np,
-#     fontes
-# )
+fontes = cast(np.ndarray, dataframe_comentarios["site"].to_numpy(dtype=str))
 
-# som.plotar_entropia_plataformas(
-#     indices_np,
-#     fontes
-# )
-# mlflow.end_run()
+som.plotar_heatmap_plataformas(
+    indices_np,
+    fontes=fontes
+)
+
+
+resultado_bmu = som.localizar_neuronios_vencedores(
+    embeddings_nomr,
+    top_k=1
+)
+
+indices_bmu = resultado_bmu["indices"]
+coordenadas_bmu = resultado_bmu["coordenadas"]
+distancias_bmu = resultado_bmu["distancias"]
+
+# Log indices BMU
+for amostra_idx, neuronios in enumerate(indices_bmu):
+    for k_idx, val in enumerate(neuronios):
+        mlflow.log_metric(
+            f"indices_bmu_amostra{amostra_idx}_top{k_idx}", float(val))
+
+# Log coordenadas BMU
+for amostra_idx, coords in enumerate(coordenadas_bmu):
+    # Transformando as coordenadas em lista de tuplas [(i,j), (i,j), ...]
+    coords_list = [(int(i), int(j)) for (i, j) in coords]
+
+    # Salvando como string JSON no MLflow
+    mlflow.log_param(
+        f"coordenadas_bmu_amostra{amostra_idx}", json.dumps(coords_list))
+
+# Log distâncias BMU
+if distancias_bmu is not None:
+    for amostra_idx, dist in enumerate(distancias_bmu):
+        for k_idx, val in enumerate(dist):
+            mlflow.log_metric(
+                f"distancias_bmu_amostra{amostra_idx}_top{k_idx}", float(val))
+
+indices_np = indices.numpy()
+
+df_importancia = som.calcular_importancia_neuronios(
+    indices_bmu=indices_np,
+    embeddings=embeddings_nomr,
+    fontes=fontes
+)
+mlflow.log_table(
+    data=df_importancia,
+    artifact_file="dataframes/importancia_neuronios.parquet"  # inclua a "pasta" no nome
+)
+print(df_importancia.head(10))
+mlflow.end_run()

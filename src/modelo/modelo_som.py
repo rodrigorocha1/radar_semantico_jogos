@@ -6,6 +6,7 @@ from typing import Dict, List, Literal, Optional, Tuple
 import mlflow
 import mlflow.tensorflow
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 from matplotlib import pyplot as plt
 from mlflow.models.signature import infer_signature
@@ -172,19 +173,16 @@ class SOM(tf.Module):
     # ---------------------------------------------------
 
     def treinar(
-        self,
-        dataset: tf.data.Dataset,
-        epocas: int,
-        calcular_erro: bool = False,
-        dados_completos: Optional[np.ndarray] = None
+            self,
+            dataset: tf.data.Dataset,
+            epocas: int,
+            calcular_erro: bool = False,
+            dados_completos: Optional[np.ndarray] = None
     ) -> None:
 
-        # Conta batches sem materializar dados
+        # Conta batches da primeira iteração
         num_batches = sum(1 for _ in dataset)
-        total_passos = tf.constant(
-            epocas * num_batches,
-            dtype=tf.float32
-        )
+        total_passos = tf.constant(epocas * num_batches, dtype=tf.float32)
 
         print("\n🚀 Iniciando treinamento do SOM")
         print(f"📌 Grid: {self.linhas}x{self.colunas}")
@@ -195,15 +193,22 @@ class SOM(tf.Module):
         print("-" * 50)
 
         for epoca in range(epocas):
+            # Criar iterador fresco para cada época
+            iterador_dataset = iter(dataset)
 
             barra = tqdm(
-                dataset,
+                range(num_batches),
                 total=num_batches,
-                desc=f"{'-' * 10} ->Época {epoca+1}/{epocas}<-{'-' * 10}",
+                desc=f"{'-' * 10} ->Época {epoca + 1}/{epocas}<-{'-' * 10}",
                 leave=False
             )
 
-            for lote in barra:
+            for _ in barra:
+                try:
+                    lote = next(iterador_dataset)
+                except StopIteration:
+                    # Evita erro OUT_OF_RANGE
+                    break
 
                 taxa, sigma = self.passo_treinamento(
                     lote,
@@ -236,7 +241,6 @@ class SOM(tf.Module):
                     step=self.global_step
                 )
 
-                # Atualiza descrição dinâmica da barra
                 barra.set_postfix({
                     "taxa": f"{float(taxa.numpy()):.4f}",
                     "sigma": f"{float(sigma.numpy()):.4f}"
@@ -256,9 +260,7 @@ class SOM(tf.Module):
                     )
 
                 mlflow.log_metric("erro_quantizacao", erro, step=epoca)
-
-                print(
-                    f" ->  Época {epoca+1}: Erro de quantização = {erro:.6f} <-")
+                print(f" ->  Época {epoca + 1}: Erro de quantização = {erro:.6f} <-")
 
             # -------- U-Matrix --------
             u_matrix = self.calcular_u_matrix()
@@ -273,10 +275,9 @@ class SOM(tf.Module):
                     step=epoca
                 )
 
-            print(f" Época {epoca+1} concluída.")
+            print(f" Época {epoca + 1} concluída.")
 
         self.writer.flush()
-
         print("\nTreinamento finalizado com sucesso.")
 
     # ---------------------------------------------------
@@ -605,4 +606,251 @@ class SOM(tf.Module):
         img = Image.open(buf)
 
         mlflow.log_image(img, "imagens/entropia_plataformas.png")
+        plt.close(fig)
+
+    def contar_ativacoes_bmu(
+        self,
+        embeddings: np.ndarray
+    ) -> np.ndarray:
+        """
+        Conta quantas vezes cada neurônio foi selecionado como BMU.
+        Retorna um vetor (linhas*colunas,) com as contagens.
+        """
+
+        indices_bmu, _ = self.mapear(embeddings)
+        indices_bmu = indices_bmu.numpy()
+
+        contagens = np.bincount(
+            indices_bmu,
+            minlength=self.total_neuronios
+        )
+
+        return contagens
+
+    def calcular_importancia_neuronios(
+        self,
+        indices_bmu: np.ndarray,
+        embeddings: np.ndarray,
+        fontes: np.ndarray,
+        alpha: float = 0.4,
+        beta: float = 0.3,
+        gamma: float = 0.2,
+        delta: float = 0.1
+    ) -> pd.DataFrame:
+        """
+        Calcula score de importância para cada neurônio do SOM.
+        """
+
+        total_docs = len(indices_bmu)
+        total_neuronios = self.total_neuronios
+
+        # -------------------------------------------------
+        # 1️⃣ DENSIDADE
+        # -------------------------------------------------
+        densidade = np.bincount(
+            indices_bmu,
+            minlength=total_neuronios
+        )
+
+        densidade_norm = densidade / total_docs
+
+        # -------------------------------------------------
+        # 2️⃣ ENTROPIA (Steam vs YouTube)
+        # -------------------------------------------------
+        grid_steam = np.zeros(total_neuronios)
+        grid_youtube = np.zeros(total_neuronios)
+
+        steam_mask = fontes == "steam"
+        youtube_mask = fontes == "youtube"
+
+        np.add.at(grid_steam, indices_bmu[steam_mask], 1)
+        np.add.at(grid_youtube, indices_bmu[youtube_mask], 1)
+
+        total = grid_steam + grid_youtube
+
+        p_s = np.divide(
+            grid_steam,
+            total,
+            out=np.zeros_like(grid_steam),
+            where=total != 0
+        )
+
+        p_y = np.divide(
+            grid_youtube,
+            total,
+            out=np.zeros_like(grid_youtube),
+            where=total != 0
+        )
+
+        entropia = np.zeros_like(total)
+        mask = total != 0
+
+        entropia[mask] = (
+            - p_s[mask] * np.log(p_s[mask] + 1e-10)
+            - p_y[mask] * np.log(p_y[mask] + 1e-10)
+        )
+
+        # normaliza entropia
+        if entropia.max() > 0:
+            entropia_norm = entropia / entropia.max()
+        else:
+            entropia_norm = entropia
+
+        # -------------------------------------------------
+        # 3️⃣ DISPERSÃO INTRA-CLUSTER
+        # -------------------------------------------------
+        dispersao = np.zeros(total_neuronios)
+
+        for neuronio in np.unique(indices_bmu):
+            mask = indices_bmu == neuronio
+            cluster = embeddings[mask]
+
+            if len(cluster) > 1:
+                centroide = cluster.mean(axis=0)
+                distancias = np.linalg.norm(cluster - centroide, axis=1)
+                dispersao[int(neuronio)] = distancias.mean()
+
+        if dispersao.max() > 0:
+            dispersao_norm = dispersao / dispersao.max()
+        else:
+            dispersao_norm = dispersao
+
+        # -------------------------------------------------
+        # 4️⃣ U-MATRIX LOCAL
+        # -------------------------------------------------
+        u_matrix = self.calcular_u_matrix().reshape(-1)
+
+        if u_matrix.max() > 0:
+            u_norm = u_matrix / u_matrix.max()
+        else:
+            u_norm = u_matrix
+
+        # -------------------------------------------------
+        # 5️⃣ SCORE FINAL
+        # -------------------------------------------------
+        score = (
+            alpha * densidade_norm
+            + beta * (1 - entropia_norm)
+            + gamma * (1 - dispersao_norm)
+            + delta * u_norm
+        )
+
+        # -------------------------------------------------
+        # 6️⃣ COORDENADAS
+        # -------------------------------------------------
+        coords = self.localizacoes.numpy().astype(int)
+
+        df = pd.DataFrame({
+            "neuronio": np.arange(total_neuronios),
+            "i": coords[:, 0],
+            "j": coords[:, 1],
+            "densidade": densidade,
+            "densidade_norm": densidade_norm,
+            "entropia": entropia,
+            "dispersao": dispersao,
+            "u_matrix": u_matrix,
+            "score_importancia": score
+        })
+
+        df = df[df["densidade"] > 0]  # apenas neurônios ativos
+        df = df.sort_values("score_importancia", ascending=False)
+
+        return df
+
+    def localizar_neuronios_vencedores(
+        self,
+        X: np.ndarray,
+        top_k: int = 1,
+        retornar_distancia: bool = True
+    ) -> Dict[str, np.ndarray]:
+        """
+        Localiza neurônios vencedores (BMUs) para cada vetor de entrada.
+
+        Parâmetros
+        ----------
+        X : np.ndarray
+            Embeddings (n_amostras, dimensao)
+
+        top_k : int
+            Número de neurônios mais próximos a retornar.
+
+        retornar_distancia : bool
+            Se True, retorna também as distâncias ao(s) BMU(s).
+
+        Retorna
+        -------
+        dict contendo:
+            - indices (n_amostras, top_k)
+            - coordenadas (n_amostras, top_k, 2)
+            - distancias (opcional)
+        """
+
+        X_tensor = tf.convert_to_tensor(X, dtype=tf.float32)
+
+        entrada_expandida = tf.expand_dims(X_tensor, 1)
+        pesos_expandidos = tf.expand_dims(self.pesos, 0)
+
+        distancias = self._calcular_distancia(
+            entrada_expandida,
+            pesos_expandidos
+        )
+
+        # Top-K menores distâncias
+        valores, indices = tf.math.top_k(
+            -distancias,
+            k=top_k
+        )
+
+        indices = indices.numpy()
+        coordenadas = tf.gather(self.localizacoes, indices).numpy()
+
+        resultado = {
+            "indices": indices,
+            "coordenadas": coordenadas
+        }
+
+        if retornar_distancia:
+            resultado["distancias"] = (-valores).numpy()
+
+        return resultado
+
+    def plotar_estrutura_grid(self):
+
+        fig, ax = plt.subplots(figsize=(6, 6))
+
+        for i in range(self.linhas):
+            for j in range(self.colunas):
+                ax.scatter(j, i)
+
+        ax.set_title(f"Estrutura do Grid SOM ({self.linhas}x{self.colunas})")
+        ax.set_xlim(-1, self.colunas)
+        ax.set_ylim(-1, self.linhas)
+        ax.invert_yaxis()
+        ax.set_aspect('equal')
+        ax.grid(True)
+
+        buf = BytesIO()
+        plt.savefig(buf, format="png")
+        buf.seek(0)
+        img = Image.open(buf)
+
+        mlflow.log_image(img, "imagens/estrutura_grid.png")
+        plt.close(fig)
+
+    def plotar_mapa_ativacoes(self, embeddings: np.ndarray):
+
+        contagens = self.contar_ativacoes_bmu(embeddings)
+        grid = contagens.reshape(self.linhas, self.colunas)
+
+        fig, ax = plt.subplots(figsize=(7, 6))
+        im = ax.imshow(grid)
+        ax.set_title("Mapa de Ativações (BMU Density)")
+        plt.colorbar(im)
+
+        buf = BytesIO()
+        plt.savefig(buf, format="png")
+        buf.seek(0)
+        img = Image.open(buf)
+
+        mlflow.log_image(img, "imagens/mapa_ativacoes.png")
         plt.close(fig)

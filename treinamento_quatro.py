@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 from src.modelo.modelo_som import SOM
 
+
 # Reprodutibilidade
 np.random.seed(42)
 tf.random.set_seed(42)
@@ -88,6 +89,11 @@ print("Neurônios rotulados:")
 for neuronio, label in rotulos.items():
     print(f"Neurônio {neuronio}: {label}")
 
+som.plotar_entropia_plataformas(indices_bmu=indices_bmu, fontes=em)
+
+contagem_ativacoes = som.contar_ativacoes_bmu(embeddings)
+
+print(contagem_ativacoes)
 
 grid_labels = np.full((som.linhas, som.colunas), "", dtype=object)
 
@@ -105,5 +111,3 @@ for i in range(som.linhas):
 plt.title("U-Matrix com rótulos por centroide")
 plt.colorbar()
 plt.savefig('u_matrix_rotulos.png')
-
-
