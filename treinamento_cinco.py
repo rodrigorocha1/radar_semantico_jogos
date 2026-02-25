@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import mlflow
 import numpy as np
 import spacy
 import tensorflow as tf
@@ -31,6 +32,11 @@ print("Exemplo embedding:", embeddings[0][:5])
 batch_size = 16
 dataset = tf.data.Dataset.from_tensor_slices(
     embeddings).shuffle(len(embeddings)).batch(batch_size)
+
+
+for i, batch in enumerate(dataset):
+    print(f"Batch {i}:")
+    print(batch.numpy())  # Converte para NumPy
 
 
 som = SOM(
@@ -76,6 +82,16 @@ for neuronio, label in rotulos.items():
     i, j = som.localizacoes[neuronio].numpy().astype(int)
     grid_labels[i, j] = label
 
+
+som.plotar_decay(num_epocas=15, num_batches=sum(1 for _ in dataset))
+amostra_embeddings = embeddings[:5]
+
+som.registrar_modelo_mlflow(
+    nome_modelo="som_portugues",
+    exemplo_entrada=amostra_embeddings
+)
+
+
 plt.figure(figsize=(8, 8))
 plt.imshow(u_matrix, cmap="viridis")
 for i in range(som.linhas):
@@ -86,3 +102,4 @@ for i in range(som.linhas):
 plt.title("U-Matrix com rótulos de comentários em português")
 plt.colorbar()
 plt.savefig('u_matrix_portugues.png')
+mlflow.end_run()

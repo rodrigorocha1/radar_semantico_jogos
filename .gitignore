@@ -10,3 +10,4 @@ praticas_tensor_flow/*
 notebooks/logs/*
 web/*
 logs/*
+som_saved_model/*

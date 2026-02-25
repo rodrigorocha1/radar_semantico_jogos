@@ -1,16 +1,27 @@
-from __future__ import annotations
-
 import datetime
 import os
+from io import BytesIO
 from typing import Dict, List, Literal, Optional, Tuple
 
-from matplotlib import pyplot as plt
+import mlflow
+import mlflow.tensorflow
 import numpy as np
 import tensorflow as tf
+from matplotlib import pyplot as plt
+from mlflow.models.signature import infer_signature
+from PIL import Image
 from tqdm.auto import tqdm
+
+from src.utils.utils import configurar_mlflow
 
 
 class SOM(tf.Module):
+
+    MLFLOW_URI = "http://172.26.0.5:5000"
+
+    EXPERIMENT_NAME = f"treinamento_som_mapa_semantico_comentarios"
+    configurar_mlflow(experiment_name=EXPERIMENT_NAME,
+                      tracking_uri=MLFLOW_URI)
 
     def __init__(
         self,
@@ -50,6 +61,21 @@ class SOM(tf.Module):
 
         self.writer = tf.summary.create_file_writer(log_dir)
         self.global_step = 0
+
+        self.mlflow_experiment = self.EXPERIMENT_NAME
+        mlflow.set_experiment(self.mlflow_experiment)
+        self.mlflow_run = mlflow.start_run()
+
+        mlflow.log_params(
+            {
+                'linhas:': linhas,
+                'colunas:': colunas,
+                'dimensao:': dimensao,
+                'taxa_aprendizado:': taxa_aprendizado,
+                'sigma:': self.sigma,
+                'metrica:': metrica,
+            }
+        )
 
     # ---------------------------------------------------
     # GRID
@@ -202,6 +228,14 @@ class SOM(tf.Module):
                         step=self.global_step
                     )
 
+                mlflow.log_metrics(
+                    {
+                        'taxa_aprendizado': float(taxa.numpy()),
+                        'sigma': float(sigma.numpy())
+                    },
+                    step=self.global_step
+                )
+
                 # Atualiza descrição dinâmica da barra
                 barra.set_postfix({
                     "taxa": f"{float(taxa.numpy()):.4f}",
@@ -221,11 +255,15 @@ class SOM(tf.Module):
                         step=epoca
                     )
 
+                mlflow.log_metric("erro_quantizacao", erro, step=epoca)
+
                 print(
                     f" ->  Época {epoca+1}: Erro de quantização = {erro:.6f} <-")
 
             # -------- U-Matrix --------
             u_matrix = self.calcular_u_matrix()
+            np.save("u_matrix.npy", u_matrix)
+            mlflow.log_artifact('u_matrix.npy')
             u_img = np.expand_dims(u_matrix, axis=(0, -1))
 
             with self.writer.as_default():
@@ -386,12 +424,94 @@ class SOM(tf.Module):
         taxa = self.taxa_aprendizado * np.exp(-passos / total_passos)
         sigma = self.sigma * np.exp(-passos / total_passos)
 
-        plt.figure(figsize=(10, 5))
-        plt.plot(passos, taxa, label='Taxa de Aprendizado')
-        plt.plot(passos, sigma, label='Sigma (Vizinhança)')
-        plt.xlabel('Passos de Treinamento')
-        plt.ylabel('Valor')
-        plt.title('Decaimento da Taxa de Aprendizado e Sigma do SOM')
-        plt.grid(True)
-        plt.legend()
-        plt.show()
+        fig, ax = plt.subplots(figsize=(10, 5))
+
+        ax.plot(passos, taxa, label='Taxa de Aprendizado')
+        ax.plot(passos, sigma, label='Sigma (Vizinhança)')
+        ax.set_xlabel('Passos de Treinamento')
+        ax.set_ylabel('Valor')
+        ax.set_title('Decaimento da Taxa de Aprendizado e Sigma do SOM')
+        ax.grid(True)
+        fig.tight_layout()
+
+        buf = BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        img = Image.open(buf)
+        mlflow.log_image(img, "imagens/decay_plot.png")
+
+        plt.close(fig)
+
+    # ---------------------------------------------------
+# REGISTRAR MODELO NO MLFLOW
+# ---------------------------------------------------
+
+    # ---------------------------------------------------
+    # REGISTRAR MODELO NO MLFLOW (ATUALIZADO)
+    # ---------------------------------------------------
+
+    def registrar_modelo_mlflow(self, nome_modelo: str, exemplo_entrada: Optional[np.ndarray] = None):
+        """
+        Registra o modelo SOM no MLflow para reuso posterior.
+        """
+
+        caminho_modelo = os.path.join(
+            "logs", "mlflow_models", f"SOM_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
+        tf.saved_model.save(self, caminho_modelo)
+
+        assinatura = None
+        if exemplo_entrada is not None:
+
+            indices_bmu, coordenadas = self.mapear(exemplo_entrada)
+
+            saida_exemplo = {
+                "indices_bmu": indices_bmu.numpy(),
+                "coordenadas": coordenadas.numpy()
+            }
+
+            assinatura = infer_signature(
+                model_input=exemplo_entrada,
+                model_output=saida_exemplo
+            )
+
+        mlflow.tensorflow.log_model(
+            self,
+            name="modelo_som",
+            registered_model_name=nome_modelo,
+            signature=assinatura
+        )
+
+        print(f"Modelo '{nome_modelo}' registrado no MLflow com sucesso" +
+              (" e com Schema." if assinatura else ", mas sem Schema."))
+
+    def gerar_summary_mlflow(self, nome_arquivo: str = "som_summary.txt") -> None:
+
+        linhas = [
+            f"SOM Summary - {datetime.datetime.now()}",
+            "-"*50,
+            f"Grid: {self.linhas}x{self.colunas}",
+            f"Dimensão do vetor de entrada: {self.dimensao}",
+            f"Total de neurônios: {self.total_neuronios}",
+            f"Taxa de aprendizado inicial: {self.taxa_aprendizado}",
+            f"Sigma inicial: {self.sigma}",
+            f"Métrica: {self.metrica}",
+            f"Inicialização: {self.inicializacao}",
+            "-"*50,
+            f"Shape dos pesos: {self.pesos.shape}",
+            f"Pesos (primeiros 5 neurônios):\n{self.pesos.numpy()[:5]}",
+            "-"*50,
+            f"Localizações dos neurônios (primeiros 5):\n{self.localizacoes.numpy()[:5]}",
+            "-"*50
+        ]
+
+        conteudo = "\n".join(linhas)
+
+        buf = BytesIO()
+        buf.write(conteudo.encode("utf-8"))
+        buf.seek(0)
+
+        mlflow.log_text(buf.getvalue().decode(
+            "utf-8"), artifact_file=nome_arquivo)
+
+        print(f"Summary gerado e registrado no MLflow: {nome_arquivo}")
