@@ -377,8 +377,8 @@ class SOM(tf.Module):
             docs = np.array(textos)[mask]
             emb_cluster = embeddings[mask]
 
-            if len(docs) < min_docs:
-                continue
+            # if len(docs) < min_docs:
+            #     continue
 
             centroide = emb_cluster.mean(axis=0)
 
@@ -515,3 +515,94 @@ class SOM(tf.Module):
             "utf-8"), artifact_file=nome_arquivo)
 
         print(f"Summary gerado e registrado no MLflow: {nome_arquivo}")
+
+    def plotar_heatmap_plataformas(
+        self,
+        indices_bmu: np.ndarray,
+        fontes: np.ndarray
+    ):
+
+        grid_steam = np.zeros(self.total_neuronios)
+        grid_youtube = np.zeros(self.total_neuronios)
+
+        # Vetorizado
+        steam_mask = fontes == "steam"
+        youtube_mask = fontes == "youtube"
+
+        np.add.at(grid_steam, indices_bmu[steam_mask], 1)
+        np.add.at(grid_youtube, indices_bmu[youtube_mask], 1)
+
+        grid_steam = grid_steam.reshape(self.linhas, self.colunas)
+        grid_youtube = grid_youtube.reshape(self.linhas, self.colunas)
+
+        for nome, grid in zip(
+            ["steam", "youtube"],
+            [grid_steam, grid_youtube]
+        ):
+
+            fig, ax = plt.subplots(figsize=(6, 6))
+            im = ax.imshow(grid)
+            ax.set_title(f"Densidade - {nome}")
+            plt.colorbar(im)
+
+            buf = BytesIO()
+            plt.savefig(buf, format="png")
+            buf.seek(0)
+            img = Image.open(buf)
+
+            mlflow.log_image(img, f"imagens/heatmap_{nome}.png")
+            plt.close(fig)
+
+    def plotar_entropia_plataformas(
+        self,
+        indices_bmu: np.ndarray,
+        fontes: np.ndarray
+    ):
+
+        grid_steam = np.zeros(self.total_neuronios)
+        grid_youtube = np.zeros(self.total_neuronios)
+
+        steam_mask = fontes == "steam"
+        youtube_mask = fontes == "youtube"
+
+        np.add.at(grid_steam, indices_bmu[steam_mask], 1)
+        np.add.at(grid_youtube, indices_bmu[youtube_mask], 1)
+
+        total = grid_steam + grid_youtube
+
+        p_s = np.divide(
+            grid_steam,
+            total,
+            out=np.zeros_like(grid_steam),
+            where=total != 0
+        )
+
+        p_y = np.divide(
+            grid_youtube,
+            total,
+            out=np.zeros_like(grid_youtube),
+            where=total != 0
+        )
+
+        entropia = np.zeros_like(total)
+
+        mask = total != 0
+        entropia[mask] = (
+            - p_s[mask] * np.log(p_s[mask] + 1e-10)
+            - p_y[mask] * np.log(p_y[mask] + 1e-10)
+        )
+
+        entropia = entropia.reshape(self.linhas, self.colunas)
+
+        fig, ax = plt.subplots(figsize=(6, 6))
+        im = ax.imshow(entropia)
+        ax.set_title("Entropia Steam vs YouTube")
+        plt.colorbar(im)
+
+        buf = BytesIO()
+        plt.savefig(buf, format="png")
+        buf.seek(0)
+        img = Image.open(buf)
+
+        mlflow.log_image(img, "imagens/entropia_plataformas.png")
+        plt.close(fig)
