@@ -92,6 +92,19 @@ rotulos = som.rotular_por_centroide(
     embeddings=embeddings_nomr,
     min_docs=3  # neurônios com menos de 3 comentários são ignorados
 )
+
+
+rotulos_formatados = {
+    f"({som.localizacoes[neuronio].numpy()[0].astype(int)}, "
+    f"{som.localizacoes[neuronio].numpy()[1].astype(int)}): ['{label}']": label
+    for neuronio, label in rotulos.items()
+}
+
+
+mlflow.log_dict(rotulos_formatados, "rotulos/rotulos_rotulos_formatados.json")
+mlflow.log_metric("qtd_neuronios_rotulados", len(rotulos_formatados))
+
+
 rotulos = {str(k): v for k, v in rotulos.items()}
 mlflow.log_dict(rotulos, "rotulos/rotulos_neuronios.json")
 
@@ -107,10 +120,7 @@ grid_labels = np.full((som.linhas, som.colunas), "", dtype=object)
 som.plotar_decay(num_epocas=15, num_batches=sum(1 for _ in dataset))
 amostra_embeddings = embeddings_nomr[:5]
 
-som.registrar_modelo_mlflow(
-    nome_modelo="som_portugues",
-    exemplo_entrada=amostra_embeddings
-)
+
 som.gerar_summary_mlflow()
 indices_np = indices.numpy()
 coordenadas_np = coordenadas.numpy()
@@ -148,22 +158,39 @@ for amostra_idx, coords in enumerate(coordenadas_bmu):
         f"coordenadas_bmu_amostra{amostra_idx}", json.dumps(coords_list))
 
 # Log distâncias BMU
-if distancias_bmu is not None:
-    for amostra_idx, dist in enumerate(distancias_bmu):
-        for k_idx, val in enumerate(dist):
-            mlflow.log_metric(
-                f"distancias_bmu_amostra{amostra_idx}_top{k_idx}", float(val))
+data = []
+for amostra_idx, (indices, coords, dists) in enumerate(zip(indices_bmu, coordenadas_bmu, distancias_bmu)):
+    for k_idx, (idx, coord, dist) in enumerate(zip(indices, coords, dists)):
+        data.append({
+            "amostra": amostra_idx,
+            "top_k": k_idx,
+            "indice_bmu": int(idx),
+            "coord_i": int(coord[0]),
+            "coord_j": int(coord[1]),
+            "distancia": float(dist)
+        })
 
-indices_np = indices.numpy()
+df_bmu = pd.DataFrame(data)
+
+# Log como tabela (artifact Parquet ou CSV)
+mlflow.log_table(df_bmu, "bmu/resultados_bmu.parquet")
+
 
 df_importancia = som.calcular_importancia_neuronios(
-    indices_bmu=indices_np,
+    indices_bmu=indices_bmu,
     embeddings=embeddings_nomr,
     fontes=fontes
 )
 mlflow.log_table(
     data=df_importancia,
     artifact_file="dataframes/importancia_neuronios.parquet"  # inclua a "pasta" no nome
+)
+
+
+som.registrar_ativacoes_bmu_mlflow(embeddings_nomr)
+som.registrar_modelo_mlflow(
+    nome_modelo="som_portugues",
+    exemplo_entrada=amostra_embeddings
 )
 print(df_importancia.head(10))
 mlflow.end_run()

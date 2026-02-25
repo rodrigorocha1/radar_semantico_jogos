@@ -75,6 +75,9 @@ class SOM(tf.Module):
                 'taxa_aprendizado:': taxa_aprendizado,
                 'sigma:': self.sigma,
                 'metrica:': metrica,
+                'pesos': self.pesos,
+                'total_neuronios': self.total_neuronios,
+
             }
         )
 
@@ -260,7 +263,8 @@ class SOM(tf.Module):
                     )
 
                 mlflow.log_metric("erro_quantizacao", erro, step=epoca)
-                print(f" ->  Época {epoca + 1}: Erro de quantização = {erro:.6f} <-")
+                print(
+                    f" ->  Época {epoca + 1}: Erro de quantização = {erro:.6f} <-")
 
             # -------- U-Matrix --------
             u_matrix = self.calcular_u_matrix()
@@ -854,3 +858,37 @@ class SOM(tf.Module):
 
         mlflow.log_image(img, "imagens/mapa_ativacoes.png")
         plt.close(fig)
+
+    def registrar_ativacoes_bmu_mlflow(self, embeddings: np.ndarray, nome_arquivo: str = "ativacoes_bmu.npy"):
+        """
+        Conta quantas vezes cada neurônio foi selecionado como BMU
+        e registra os resultados no MLflow (arquivo .npy e heatmap).
+        """
+
+        # 1️⃣ Contar ativações
+        contagens = self.contar_ativacoes_bmu(embeddings)
+        np.save(nome_arquivo, contagens)
+
+        # Log do arquivo bruto
+        mlflow.log_artifact(nome_arquivo)
+
+        # 2️⃣ Criar heatmap do grid
+        grid = contagens.reshape(self.linhas, self.colunas)
+
+        fig, ax = plt.subplots(figsize=(6, 6))
+        im = ax.imshow(grid, cmap="viridis")
+        ax.set_title("Mapa de Ativações BMU")
+        plt.colorbar(im)
+
+        # Salvar imagem no buffer
+        buf = BytesIO()
+        plt.savefig(buf, format="png")
+        buf.seek(0)
+        img = Image.open(buf)
+
+        # Log no MLflow
+        mlflow.log_image(img, "imagens/heatmap_ativacoes_bmu.png")
+        plt.close(fig)
+
+        print(
+            f"✅ Ativações BMU registradas no MLflow: {nome_arquivo} + heatmap")
