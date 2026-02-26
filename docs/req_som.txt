@@ -1,0 +1,43 @@
+tamanho = 5 * raiz quadrada da quantidade de registros
+
+ atributo de classes
+ 
+ linha, colunas, tamanho_camada_entrada
+ sigma: Raio para processo de aprendizagem = 1
+ 
+taxa_aprendizagem= 0.5
+semente = 2
+
+Inicar os pessos
+iniciar_pessos -> Método Recebe os embedins do spacy
+
+
+
+treinar -> método
+x -> embedings 
+epocas -> Número de vezes
+
+
+--------
+Adicionar porpeties para ver os pesos, shape, 
+
+mapa de ativação
+
+ver shape do mapa de ativação
+
+método pra ver quantas vezes o neurônio foi selecionado como bmu, (passar como parâmetro a base)
+
+
+método para ver a média das distâncias dos neuronios
+
+
+Fazer método para pegar o neurônio vencedor
+
+
+
+
+
+
+
+ 
+ 

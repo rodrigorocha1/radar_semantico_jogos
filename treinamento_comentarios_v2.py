@@ -1,6 +1,7 @@
 
 
 import ast
+import json
 from math import e
 
 import numpy as np
@@ -122,4 +123,4 @@ rotulos_formatados = {
     for neuronio, label in rotulos.items()
 }
 
-print(rotulos_formatados)
+print(json.dumps(rotulos_formatados, indent=4, ensure_ascii=False))
