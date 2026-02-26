@@ -1,3 +1,5 @@
+import datetime
+import os
 from typing import Dict, List, Literal, Optional, Tuple
 
 import numpy as np
@@ -170,25 +172,30 @@ class SOMV2(tf.Module):
     def treinar(
         self,
         dataset: tf.data.Dataset,
-        epocas: int
+        epocas: int,
+        logdir: Optional[str] = None
     ):
+        """
+        Treina o SOM e grava métricas no TensorBoard, incluindo o grafo.
+        """
 
-        # -------------------------------------------------
-        # Reconstrói dataset completo para métricas
-        # -------------------------------------------------
+        if logdir is None:
+            logdir = os.path.join(
+                "logs",
+                "SOM",
+                datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            )
+        writer = tf.summary.create_file_writer(logdir)
+
+        # Concatena todo dataset para cálculo de métricas
         X_completo = tf.concat([x for x in dataset], axis=0)
-
         num_batches = sum(1 for _ in dataset)
-        total_passos = tf.constant(
-            epocas * num_batches,
-            dtype=tf.float32
-        )
+        total_passos = tf.constant(epocas * num_batches, dtype=tf.float32)
 
-        # Histórico opcional
         self.historico_qe = []
         self.historico_te = []
 
-        print("\nIniciando treinamento do SOM")
+        print("\nIniciando treinamento do SOM (TensorBoard)")
         print(f"Grid: {self.__linhas}x{self.__colunas}")
         print(f"Dimensão vetorial: {self.__dimensao}")
         print(f"Total neurônios: {self.__total_neuronios}")
@@ -196,21 +203,24 @@ class SOMV2(tf.Module):
         print(f"Batches por época: {num_batches}")
         print("-" * 50)
 
+        # --------------------------
+        # Registrar grafo SOM (sem erro de profiler)
+        # --------------------------
+        with writer.as_default():
+            tf.summary.trace_on(graph=True)  # apenas o grafo, sem profiler
+
         for epoca in range(epocas):
-
             for lote in tqdm(dataset, leave=False):
-
                 taxa, sigma = self.passo_treinamento(
                     lote,
                     tf.constant(self.__global_step, dtype=tf.float32),
                     total_passos
                 )
-
                 self.__global_step += 1
 
-            # -------------------------------------------------
+            # --------------------------
             # Métricas após cada época
-            # -------------------------------------------------
+            # --------------------------
             qe = self.calcular_erro_quantizacao(X_completo)
             te = self.calcular_erro_topografico(X_completo)
 
@@ -219,11 +229,31 @@ class SOMV2(tf.Module):
 
             print(
                 f"Época {epoca+1}/{epocas} concluída | "
-                f"QE: {qe.numpy():.6f} | "
-                f"TE: {te.numpy():.6f}"
+                f"QE: {qe.numpy():.6f} | TE: {te.numpy():.6f}"
             )
 
-        print("\nTreinamento finalizado.")
+            with writer.as_default():
+                tf.summary.scalar("QE", qe, step=epoca)
+                tf.summary.scalar("TE", te, step=epoca)
+                tf.summary.histogram("Pesos SOM", self.pesos, step=epoca)
+
+                # U-Matrix como imagem
+                u_matrix = self.distance_map().numpy()
+                u_matrix = np.expand_dims(u_matrix, axis=-1)  # (lin, col, 1)
+                u_matrix = np.expand_dims(
+                    u_matrix, axis=0)   # (1, lin, col, 1)
+                tf.summary.image("U-Matrix", u_matrix, step=epoca)
+
+        # --------------------------
+        # Exporta grafo SOM
+        # --------------------------
+        with writer.as_default():
+            tf.summary.trace_export(
+                name="grafo_som",
+                step=0
+            )
+
+        print(f"\nTreinamento finalizado. Logs gravados em: {logdir}")
 
     def obter_mapa_ativacao(self, entrada: tf.Tensor) -> tf.Tensor:
         """
@@ -558,7 +588,6 @@ class SOMV2(tf.Module):
     ) -> Tuple[tf.Tensor, tf.Tensor]:
 
         X_tensor = tf.convert_to_tensor(X, dtype=tf.float32)
-
 
         entrada_expandida = tf.expand_dims(
             tf.expand_dims(X_tensor, 1), 1
