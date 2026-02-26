@@ -864,15 +864,14 @@ class SOM(tf.Module):
         Conta quantas vezes cada neurônio foi selecionado como BMU
         e registra os resultados no MLflow (arquivo .npy e heatmap).
         """
-
-        # 1️⃣ Contar ativações
         contagens = self.contar_ativacoes_bmu(embeddings)
         np.save(nome_arquivo, contagens)
+
+        print(contagens)
 
         # Log do arquivo bruto
         mlflow.log_artifact(nome_arquivo)
 
-        # 2️⃣ Criar heatmap do grid
         grid = contagens.reshape(self.linhas, self.colunas)
 
         fig, ax = plt.subplots(figsize=(6, 6))
@@ -880,15 +879,13 @@ class SOM(tf.Module):
         ax.set_title("Mapa de Ativações BMU")
         plt.colorbar(im)
 
-        # Salvar imagem no buffer
         buf = BytesIO()
         plt.savefig(buf, format="png")
         buf.seek(0)
         img = Image.open(buf)
 
-        # Log no MLflow
         mlflow.log_image(img, "imagens/heatmap_ativacoes_bmu.png")
         plt.close(fig)
 
         print(
-            f"✅ Ativações BMU registradas no MLflow: {nome_arquivo} + heatmap")
+            f"Ativações BMU registradas no MLflow: {nome_arquivo} + heatmap")

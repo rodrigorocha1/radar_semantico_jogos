@@ -142,12 +142,6 @@ indices_bmu = resultado_bmu["indices"]
 coordenadas_bmu = resultado_bmu["coordenadas"]
 distancias_bmu = resultado_bmu["distancias"]
 
-# Log indices BMU
-for amostra_idx, neuronios in enumerate(indices_bmu):
-    for k_idx, val in enumerate(neuronios):
-        mlflow.log_metric(
-            f"indices_bmu_amostra{amostra_idx}_top{k_idx}", float(val))
-
 # Log coordenadas BMU
 for amostra_idx, coords in enumerate(coordenadas_bmu):
     # Transformando as coordenadas em lista de tuplas [(i,j), (i,j), ...]
@@ -158,26 +152,19 @@ for amostra_idx, coords in enumerate(coordenadas_bmu):
         f"coordenadas_bmu_amostra{amostra_idx}", json.dumps(coords_list))
 
 # Log distâncias BMU
-data = []
-for amostra_idx, (indices, coords, dists) in enumerate(zip(indices_bmu, coordenadas_bmu, distancias_bmu)):
-    for k_idx, (idx, coord, dist) in enumerate(zip(indices, coords, dists)):
-        data.append({
-            "amostra": amostra_idx,
-            "top_k": k_idx,
-            "indice_bmu": int(idx),
-            "coord_i": int(coord[0]),
-            "coord_j": int(coord[1]),
-            "distancia": float(dist)
-        })
-
-df_bmu = pd.DataFrame(data)
-
-# Log como tabela (artifact Parquet ou CSV)
-mlflow.log_table(df_bmu, "bmu/resultados_bmu.parquet")
+step_counter = 0
+for amostra_idx, neuronios in enumerate(indices_bmu):
+    for k_idx, val in enumerate(neuronios):
+        mlflow.log_metric(
+            f"indices_bmu_amostra{amostra_idx}_top{k_idx}",
+            float(val),
+            step=step_counter
+        )
+        step_counter += 1
 
 
 df_importancia = som.calcular_importancia_neuronios(
-    indices_bmu=indices_bmu,
+    indices_bmu=indices_bmu.flatten(),
     embeddings=embeddings_nomr,
     fontes=fontes
 )
@@ -192,5 +179,5 @@ som.registrar_modelo_mlflow(
     nome_modelo="som_portugues",
     exemplo_entrada=amostra_embeddings
 )
-print(df_importancia.head(10))
+
 mlflow.end_run()
