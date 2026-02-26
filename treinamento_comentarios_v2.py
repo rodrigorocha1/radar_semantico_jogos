@@ -34,7 +34,7 @@ caminho_consulta = f's3://extracao/comentarios/prata/comentarios_limpos_2026_02_
 
 dataframe_comentarios = obddb.consultar_dados('1=1', caminho_consulta)
 # Para teste, pegar apenas os primeiros 1000 comentários
-dataframe_comentarios = dataframe_comentarios.head(100)
+# dataframe_comentarios = dataframe_comentarios.head(100)
 
 dataframe_comentarios['is_english'] = dataframe_comentarios['texto_comentario'].apply(
     is_english)
@@ -82,8 +82,7 @@ som_v2.treinar(dataset, epocas=5)
 mapa = som_v2.obter_mapa_ativacao(embeddings_nomr)
 print(mapa)
 print("Shape mapa ativação:", mapa.shape)
-bmu = tf.argmin(tf.reshape(mapa, [-1]))
-print("BMU:", bmu.numpy())
+
 resposta = som_v2.obter_resposta_ativacao(embeddings_nomr)
 print(resposta)
 print('U-Matrix:')
