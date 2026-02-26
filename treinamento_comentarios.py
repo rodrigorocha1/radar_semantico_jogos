@@ -44,7 +44,7 @@ dataframe_comentarios = dataframe_comentarios.drop(
 dataframe_comentarios = dataframe_comentarios.dropna()
 
 
-dataframe_comentarios = dataframe_comentarios.head(100)
+# dataframe_comentarios = dataframe_comentarios.head(100)
 # print(dataframe_comentarios.shape)
 
 
