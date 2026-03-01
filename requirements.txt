@@ -115,7 +115,6 @@ proto-plus==1.27.1
 protobuf==6.33.5
 psutil==7.2.2
 pt-core-news-lg @ https://github.com/explosion/spacy-models/releases/download/pt_core_news_lg-3.7.0/pt_core_news_lg-3.7.0-py3-none-any.whl#sha256=4eed7801647c39ced078eb325d0ff8eb2ea5d4945501b8ee898dced85c686717
-pt_core_news_sm @ https://github.com/explosion/spacy-models/releases/download/pt_core_news_sm-3.8.0/pt_core_news_sm-3.8.0-py3-none-any.whl#sha256=c304fa04db3af73cd08a250feacf560506e15a2ec2469bd1b09f06847f6b455c
 ptyprocess==0.7.0
 pure_eval==0.2.3
 pyarrow==22.0.0
