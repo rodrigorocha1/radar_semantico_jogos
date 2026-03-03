@@ -2,6 +2,9 @@ volumes:
   pgdata:
   minio-data:
 
+
+
+
 services:
   postgres:
     image: postgres:15
@@ -10,19 +13,18 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-      TZ: America/Sao_Paulo
     volumes:
       - ./pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      mlflow-network:
+        ipv4_address: 172.26.0.10
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 5s
       timeout: 3s
       retries: 10
-    networks:
-      mlflow-network:
-        ipv4_address: 172.26.0.2
 
   minio:
     image: minio/minio:latest
@@ -30,21 +32,20 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      TZ: America/Sao_Paulo
     volumes:
       - ./minio-data:/data
     command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
       - "9001:9001"
+    networks:
+      mlflow-network:
+        ipv4_address: 172.26.0.20
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${MINIO_PORT}/minio/health/live"]
+      test: [ "CMD", "curl", "-f", "http://localhost:${MINIO_PORT}/minio/health/live" ]
       interval: 5s
       timeout: 3s
       retries: 20
-    networks:
-      mlflow-network:
-        ipv4_address: 172.26.0.3
 
   create-bucket:
     image: minio/mc:latest
@@ -59,10 +60,10 @@ services:
         mc alias set myminio "http://${MINIO_HOST}:${MINIO_PORT}" \
           "${MINIO_ROOT_USER}" "${MINIO_ROOT_PASSWORD}"
         mc mb --ignore-existing "myminio/${MINIO_BUCKET:-mlflow}"
-    restart: "no"
     networks:
       mlflow-network:
-        ipv4_address: 172.26.0.4
+        ipv4_address: 172.26.0.30
+    restart: "no"
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:${MLFLOW_VERSION}
@@ -75,7 +76,10 @@ services:
       create-bucket:
         condition: service_completed_successfully
     environment:
+      # Backend store URI built from vars
       MLFLOW_BACKEND_STORE_URI: ${MLFLOW_BACKEND_STORE_URI}
+
+      # S3/MinIO settings
       MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
       MLFLOW_ARTIFACTS_DESTINATION: ${MLFLOW_ARTIFACTS_DESTINATION}
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
@@ -83,50 +87,41 @@ services:
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
       MLFLOW_S3_IGNORE_TLS: "true"
 
-      TZ: America/Sao_Paulo
-    command: >
-      /bin/bash -c "
-      pip install --no-cache-dir psycopg2-binary boto3 &&
-      mlflow server
-      --backend-store-uri ${MLFLOW_BACKEND_STORE_URI}
-      --artifacts-destination ${MLFLOW_ARTIFACTS_DESTINATION}
-      --serve-artifacts
-      --host 0.0.0.0
-      --port ${MLFLOW_PORT}
-      --allowed-hosts '*'
-      "
+      # Server host/port
+      MLFLOW_HOST: ${MLFLOW_HOST}
+      MLFLOW_PORT: ${MLFLOW_PORT}
+
+    command:
+      - /bin/bash
+      - -c
+      - |
+        pip install --no-cache-dir psycopg2-binary boto3
+        mlflow server \
+          --backend-store-uri "${MLFLOW_BACKEND_STORE_URI}" \
+          --artifacts-destination "${MLFLOW_ARTIFACTS_DESTINATION}" \
+          --serve-artifacts \
+          --host "${MLFLOW_HOST}" \
+          --port "${MLFLOW_PORT}"
     ports:
       - "${MLFLOW_PORT}:${MLFLOW_PORT}"
     networks:
       mlflow-network:
-        ipv4_address: 172.26.0.5
-
-#  mlflow-serving:
-#    image: mlflow-api
-#    container_name: mlflow-api-producao
-#    depends_on:
-#      - mlflow
-#    environment:
-#      MLFLOW_TRACKING_URI: http://mlflow-server:5000
-#      AWS_ACCESS_KEY_ID: minio
-#      AWS_SECRET_ACCESS_KEY: minio123
-#      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
-#    ports:
-#      - "5002:5002"
-#    command: >
-#      mlflow models serve
-#      -m models:/VotingRegressorPipeline/Production
-#      --host 0.0.0.0
-#      -p 5002
-#      --env-manager=local
-#
-#    networks:
-#      mlflow-network:
-#        ipv4_address: 172.26.0.6
+        ipv4_address: 172.26.0.40
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:${MLFLOW_PORT}/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
 
 networks:
   mlflow-network:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.26.0.0/16
+        - subnet: 172.26.0.0/24

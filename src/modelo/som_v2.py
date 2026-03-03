@@ -10,32 +10,32 @@ from tqdm import tqdm
 class SOMV2(tf.Module):
 
     def __init__(
-        self,
-        linhas: int,
-        colunas: int,
-        dimensao: int,
-        taxa_aprendizado: float = 0.5,
-        sigma: float = 1.0,
-        metrica: Literal["euclidiana", "cosseno"] = "euclidiana",
+            self,
+            linhas: int,
+            colunas: int,
+            dimensao: int,
+            taxa_aprendizado: float = 0.5,
+            sigma: float = 1.0,
+            metrica: Literal["euclidiana", "cosseno"] = "euclidiana",
     ):
+        super().__init__()
+        self._linhas = linhas
+        self._colunas = colunas
+        self._dimensao = dimensao
+        self.total_neuronios = linhas * colunas
 
-        self.__linhas = linhas
-        self.__colunas = colunas
-        self.__dimensao = dimensao
-        self.__total_neuronios = linhas * colunas
+        self._taxa_aprendizado = taxa_aprendizado
+        self._sigma = sigma
+        self._metrica = metrica
 
-        self.__taxa_aprendizado = taxa_aprendizado
-        self.__sigma = sigma
-        self.__metrica = metrica
-
-        self.__global_step = 0
+        self._global_step = 0
         self.historico_pesos = []
 
         # -----------------------------
         # Inicializa grid de coordenadas
         # -----------------------------
-        lin = tf.range(self.__linhas, dtype=tf.float32)
-        col = tf.range(self.__colunas, dtype=tf.float32)
+        lin = tf.range(self._linhas, dtype=tf.float32)
+        col = tf.range(self._colunas, dtype=tf.float32)
         grid_l, grid_c = tf.meshgrid(lin, col, indexing="ij")
 
         self.localizacoes = tf.reshape(
@@ -48,7 +48,7 @@ class SOMV2(tf.Module):
         # -----------------------------
         self.pesos = tf.Variable(
             tf.random.normal(
-                shape=[self.__linhas, self.__colunas, self.__dimensao],
+                shape=[self._linhas, self._colunas, self._dimensao],
                 mean=0.0,
                 stddev=1.0,
                 dtype=tf.float32
@@ -62,7 +62,7 @@ class SOMV2(tf.Module):
 
     def _calcular_distancia(self, entrada, pesos):
 
-        if self.__metrica == "cosseno":
+        if self._metrica == "cosseno":
             entrada = tf.nn.l2_normalize(entrada, axis=-1)
             pesos = tf.nn.l2_normalize(pesos, axis=-1)
             similaridade = tf.reduce_sum(entrada * pesos, axis=-1)
@@ -79,17 +79,17 @@ class SOMV2(tf.Module):
 
     @tf.function
     def passo_treinamento(
-        self,
-        entrada: tf.Tensor,
-        passo_atual: tf.Tensor,
-        total_passos: tf.Tensor
+            self,
+            entrada: tf.Tensor,
+            passo_atual: tf.Tensor,
+            total_passos: tf.Tensor
     ) -> Tuple[tf.Tensor, tf.Tensor]:
 
-        taxa = self.__taxa_aprendizado * tf.exp(
+        taxa = self._taxa_aprendizado * tf.exp(
             -passo_atual / total_passos
         )
 
-        sigma = self.__sigma * tf.exp(
+        sigma = self._sigma * tf.exp(
             -passo_atual / total_passos
         )
 
@@ -149,14 +149,14 @@ class SOMV2(tf.Module):
 
         vizinhanca = tf.reshape(
             vizinhanca,
-            [-1, self.__linhas, self.__colunas, 1]
+            [-1, self._linhas, self._colunas, 1]
         )
 
         # -----------------------------------
         # Atualização vetorizada
         # -----------------------------------
         delta = taxa * vizinhanca * (
-            entrada_expandida - pesos_expandidos
+                entrada_expandida - pesos_expandidos
         )
 
         novo_peso = self.pesos + tf.reduce_mean(delta, axis=0)
@@ -170,10 +170,10 @@ class SOMV2(tf.Module):
     # ==========================================================
 
     def treinar(
-        self,
-        dataset: tf.data.Dataset,
-        epocas: int,
-        logdir: Optional[str] = None
+            self,
+            dataset: tf.data.Dataset,
+            epocas: int,
+            logdir: Optional[str] = None
     ):
         """
         Treina o SOM e grava métricas no TensorBoard, incluindo o grafo.
@@ -196,9 +196,9 @@ class SOMV2(tf.Module):
         self.historico_te = []
 
         print("\nIniciando treinamento do SOM (TensorBoard)")
-        print(f"Grid: {self.__linhas}x{self.__colunas}")
-        print(f"Dimensão vetorial: {self.__dimensao}")
-        print(f"Total neurônios: {self.__total_neuronios}")
+        print(f"Grid: {self._linhas}x{self._colunas}")
+        print(f"Dimensão vetorial: {self._dimensao}")
+        print(f"Total neurônios: {self.total_neuronios}")
         print(f"Épocas: {epocas}")
         print(f"Batches por época: {num_batches}")
         print("-" * 50)
@@ -213,10 +213,10 @@ class SOMV2(tf.Module):
             for lote in tqdm(dataset, leave=False):
                 taxa, sigma = self.passo_treinamento(
                     lote,
-                    tf.constant(self.__global_step, dtype=tf.float32),
+                    tf.constant(self._global_step, dtype=tf.float32),
                     total_passos
                 )
-                self.__global_step += 1
+                self._global_step += 1
 
             # --------------------------
             # Métricas após cada época
@@ -228,7 +228,7 @@ class SOMV2(tf.Module):
             self.historico_te.append(te.numpy())
 
             print(
-                f"Época {epoca+1}/{epocas} concluída | "
+                f"Época {epoca + 1}/{epocas} concluída | "
                 f"QE: {qe.numpy():.6f} | TE: {te.numpy():.6f}"
             )
 
@@ -241,7 +241,7 @@ class SOMV2(tf.Module):
                 u_matrix = self.distance_map().numpy()
                 u_matrix = np.expand_dims(u_matrix, axis=-1)  # (lin, col, 1)
                 u_matrix = np.expand_dims(
-                    u_matrix, axis=0)   # (1, lin, col, 1)
+                    u_matrix, axis=0)  # (1, lin, col, 1)
                 tf.summary.image("U-Matrix", u_matrix, step=epoca)
 
         # --------------------------
@@ -331,8 +331,8 @@ class SOMV2(tf.Module):
         # -----------------------------
         contagem = tf.math.bincount(
             indice_bmu,
-            minlength=self.__total_neuronios,
-            maxlength=self.__total_neuronios,
+            minlength=self.total_neuronios,
+            maxlength=self.total_neuronios,
             dtype=tf.int32
         )
 
@@ -341,7 +341,7 @@ class SOMV2(tf.Module):
         # -----------------------------
         response = tf.reshape(
             contagem,
-            [self.__linhas, self.__colunas]
+            [self._linhas, self._colunas]
         )
 
         return response
@@ -422,7 +422,7 @@ class SOMV2(tf.Module):
 
         entrada_expandida = tf.reshape(
             entrada,
-            [1, 1, self.__dimensao]
+            [1, 1, self._dimensao]
         )
 
         distancias = self._calcular_distancia(
@@ -432,13 +432,13 @@ class SOMV2(tf.Module):
 
         indice_flat = tf.argmin(
             tf.reshape(distancias, [-1]),
-            output_type=tf.int32   # ← FIX AQUI
+            output_type=tf.int32  # ← FIX AQUI
         )
 
         coords = tf.unravel_index(
             indice_flat,
             tf.constant(
-                [self.__linhas, self.__colunas],
+                [self._linhas, self._colunas],
                 dtype=tf.int32
             )
         )
@@ -446,10 +446,10 @@ class SOMV2(tf.Module):
         return tf.stack(coords)
 
     def rotular_por_centroide(
-        self,
-        textos: List[str],
-        embeddings: np.ndarray,
-        min_docs: int = 3
+            self,
+            textos: List[str],
+            embeddings: np.ndarray,
+            min_docs: int = 3
     ) -> Dict[int, str]:
 
         indices, _ = self.mapear(embeddings)
@@ -458,7 +458,6 @@ class SOMV2(tf.Module):
         rotulos: Dict[int, str] = {}
 
         for neuronio in np.unique(indices):
-
             mask = indices == neuronio
             docs = np.array(textos)[mask]
             emb_cluster = embeddings[mask]
@@ -558,7 +557,7 @@ class SOMV2(tf.Module):
         coords1 = tf.stack(
             tf.unravel_index(
                 bmu1,
-                (self.__linhas, self.__colunas)
+                (self._linhas, self._colunas)
             ),
             axis=1
         )
@@ -566,7 +565,7 @@ class SOMV2(tf.Module):
         coords2 = tf.stack(
             tf.unravel_index(
                 bmu2,
-                (self.__linhas, self.__colunas)
+                (self._linhas, self._colunas)
             ),
             axis=1
         )
@@ -583,8 +582,8 @@ class SOMV2(tf.Module):
         return tf.reduce_mean(erro)
 
     def mapear(
-        self,
-        X: np.ndarray
+            self,
+            X: np.ndarray
     ) -> Tuple[tf.Tensor, tf.Tensor]:
 
         X_tensor = tf.convert_to_tensor(X, dtype=tf.float32)
@@ -619,3 +618,54 @@ class SOMV2(tf.Module):
         )
 
         return indices_bmu, coordenadas
+
+    @tf.function(
+        input_signature=[
+            tf.TensorSpec(shape=[None, None], dtype=tf.float32)
+        ]
+    )
+    def __call__(self, base_x: tf.Tensor) -> tf.Tensor:
+        """
+        Interface oficial de inferência (MLflow / SavedModel).
+
+        Entrada:
+            (batch, dim)
+
+        Saída:
+            (batch, 2) coordenadas do neurônio vencedor
+        """
+
+        # Garante tensor
+        base_x = tf.convert_to_tensor(base_x, dtype=tf.float32)
+
+        # Expansão para broadcast
+        entrada_expandida = tf.expand_dims(
+            tf.expand_dims(base_x, 1), 1
+        )
+
+        pesos_expandidos = tf.expand_dims(
+            self.pesos, 0
+        )
+
+        distancias = self._calcular_distancia(
+            entrada_expandida,
+            pesos_expandidos
+        )
+
+        dist_flat = tf.reshape(
+            distancias,
+            [tf.shape(distancias)[0], -1]
+        )
+
+        indices_bmu = tf.argmin(
+            dist_flat,
+            axis=1,
+            output_type=tf.int32
+        )
+
+        coordenadas = tf.gather(
+            self.localizacoes,
+            indices_bmu
+        )
+
+        return coordenadas
