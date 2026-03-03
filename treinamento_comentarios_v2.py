@@ -1,4 +1,5 @@
 import ast
+import io
 import json
 import os
 
@@ -59,7 +60,7 @@ embeddings_array = np.array(
     dtype=np.float32
 )
 
-print("Shape embeddings:", embeddings_array.shape)
+
 
 scaler = StandardScaler()
 embeddings_nomr = scaler.fit_transform(embeddings_array)
@@ -91,20 +92,28 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
             'pesos': som_v2.pesos.numpy(),
             'total_neuronios': som_v2.total_neuronios,
             'shape_mapa_ativacao': mapa.shape,
-            'resposta': resposta
+            'resposta': resposta,
+            'media_das_distancias': som_v2.distance_map()
 
         }
     )
 
 
 
-    print('U-Matrix:')
-    media_das_distancias = som_v2.distance_map()
 
-    print(media_das_distancias)
-    print('*' * 58)
     neuronio_vencedor = som_v2.obter_neuronio_vencedor(embeddings_nomr[1])
-    print(neuronio_vencedor)
+    lista_neuronios_vencedor = [
+        {
+            f'comentário_{chave}': f'neurônio_vencedor_{som_v2.obter_neuronio_vencedor(embeddings_nomr[chave])}'
+        }
+        for chave, valor in enumerate(embeddings_nomr)
+    ]
+
+    json_buffer = io.StringIO()
+    json.dump(lista_neuronios_vencedor, json_buffer, indent=4, ensure_ascii=False)
+    json_buffer.seek(0)
+    mlflow.log_text(json_buffer.getvalue(), artifact_file='resultados/neuronio_vencedor.json')
+    json_buffer.close()
 
     for chave, valor in enumerate(embeddings_nomr):
         neuronio_vencedor = som_v2.obter_neuronio_vencedor(embeddings_nomr[chave])
@@ -131,7 +140,13 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
         for neuronio, label in rotulos.items()
     }
 
-    print(json.dumps(rotulos_formatados, indent=4, ensure_ascii=False))
+    json_buffer = io.StringIO()
+    json.dump(rotulos_formatados, json_buffer, indent=4, ensure_ascii=False)
+    json_buffer.seek(0)
+    mlflow.log_text(json_buffer.getvalue(), artifact_file='resultados/rotulos_formatados.json')
+    json_buffer.close()
+
+
 
     #
     input_example = embeddings_nomr[:5].astype(np.float32)
