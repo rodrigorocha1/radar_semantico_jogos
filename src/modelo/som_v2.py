@@ -710,6 +710,20 @@ class SOMV2(tf.Module):
 
         return coordenadas
 
+    def obter_pesos(self, flatten: bool = False) -> np.ndarray:
+        """
+        Retorna os pesos da SOM.
+
+        flatten=True  -> (total_neuronios, dimensao)
+        flatten=False -> (linhas, colunas, dimensao)
+        """
+        pesos = self.pesos.numpy()
+
+        if flatten:
+            return pesos.reshape(-1, self._dimensao)
+
+        return pesos
+
     @property
     def linhas(self):
         return self._linhas

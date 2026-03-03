@@ -12,7 +12,9 @@ import tensorflow as tf
 from langdetect import detect
 from matplotlib import pyplot as plt
 from mlflow.models import infer_signature
+from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
 from wordcloud import WordCloud
 
@@ -93,7 +95,8 @@ metrica: Literal["cosseno"] = "cosseno"
 sigma = 1
 batch_size = int(math.sqrt(total_neuronios))
 taxa_aprendizado = 0.5 / math.sqrt(batch_size)
-epocas = max(50, int((500 * linhas * colunas * batch_size) / dataframe_comentarios.shape[0]))
+# epocas = max(50, int((500 * linhas * colunas * batch_size) / dataframe_comentarios.shape[0]))
+epocas = 5
 
 som_v2 = SOMV2(
     linhas=linhas,
@@ -339,6 +342,138 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
     input_example = embeddings_nomr[:5].astype(np.float32)
     output_example = som_v2(tf.convert_to_tensor(input_example))
     signature = infer_signature(input_example, output_example.numpy())
+
+    coords = coordenadas_bmu.numpy()
+
+    associacao = []
+
+    for idx, (i, j) in enumerate(coords):
+        associacao.append({
+            "comentario": dataframe_comentarios['texto_comentario'].iloc[idx],
+            "linha": int(i),
+            "coluna": int(j),
+            "u_matrix_valor": float(u_matrix[int(i), int(j)])
+        })
+
+    threshold = np.mean(u_matrix)
+
+    regioes_fronteira = []
+    regioes_cluster = []
+
+    for item in associacao:
+        if item["u_matrix_valor"] > threshold:
+            regioes_fronteira.append(item)
+        else:
+            regioes_cluster.append(item)
+
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(u_matrix, cmap='coolwarm')
+
+    for idx, (i, j) in enumerate(coords):
+        plt.text(
+            j + 0.5,
+            i + 0.5,
+            str(idx),
+            ha='center',
+            va='center',
+            fontsize=6,
+            color='black'
+        )
+
+    plt.title("U-Matrix com índices dos comentários")
+    mlflow.log_figure(plt.gcf(), 'fig/u_matriz_indice_comentarios.png')
+    plt.close()
+
+    hit_map = som_v2.obter_resposta_ativacao(embeddings_nomr)
+
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(hit_map, cmap='Blues', annot=True, fmt=".0f")
+    plt.title("Hit Map (Densidade de Comentários)")
+    mlflow.log_figure(plt.gcf(), 'fig/u_matriz_indice_comentarios.png')
+    plt.close()
+
+    hit_map = np.zeros_like(u_matrix)
+
+    for (i, j) in coords:
+        hit_map[int(i), int(j)] += 1
+
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(u_matrix, cmap='coolwarm', alpha=0.6)
+
+    for i in range(hit_map.shape[0]):
+        for j in range(hit_map.shape[1]):
+            if hit_map[i, j] > 0:
+                plt.text(
+                    j + 0.5,
+                    i + 0.5,
+                    str(int(hit_map[i, j])),
+                    ha='center',
+                    va='center',
+                    fontsize=8,
+                    color='black',
+                    weight='bold'
+                )
+
+    plt.title("U-Matrix com Densidade de Comentários")
+    mlflow.log_figure(plt.gcf(), 'fig/u_matriz_hit_count.png')
+    plt.close()
+
+    # Pesos da SOM (shape: n_neuronios x n_features)
+    range_k = range(2, 15)
+    best_k = None
+    best_score = -1
+    # --------------------------------------------------
+    pesos = som_v2.obter_pesos(flatten=True)
+
+    for k in range_k:
+        kmeans = KMeans(n_clusters=k, random_state=42, n_init=20)
+        labels = kmeans.fit_predict(pesos)
+
+        # Garante que existem pelo menos 2 clusters reais
+        if len(np.unique(labels)) > 1:
+            score = silhouette_score(pesos, labels)
+
+            if score > best_score:
+                best_score = score
+                best_k = k
+
+    # Log MLflow
+    mlflow.log_metric("best_k_kmeans", best_k)
+    mlflow.log_metric("best_score_kmeans", best_score)
+
+    print(f"Melhor k: {best_k}")
+    print(f"Silhouette: {best_score:.4f}")
+
+    # --------------------------------------------------
+    # 3️⃣ Treinamento final
+    # --------------------------------------------------
+    kmeans = KMeans(n_clusters=best_k, random_state=42, n_init=20)
+    cluster_labels = kmeans.fit_predict(pesos)
+
+    # --------------------------------------------------
+    # 4️⃣ Corrigir reshape usando dimensões reais
+    # --------------------------------------------------
+    cluster_map = cluster_labels.reshape(
+        som_v2.linhas,
+        som_v2.colunas
+    )
+
+    # --------------------------------------------------
+    # 5️⃣ Plot correto
+    # --------------------------------------------------
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(
+        cluster_map,
+        cmap="tab20",
+        annot=True,
+        fmt="d",
+        cbar=True
+    )
+    plt.title(f"Clusters na SOM (k={best_k})")
+    plt.tight_layout()
+    mlflow.log_figure(plt.gcf(), 'fig/cluster_som.png')
+    plt.close()
+
     mlflow.tensorflow.log_model(
         model=som_v2,
         name="som_model",
