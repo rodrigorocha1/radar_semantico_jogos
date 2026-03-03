@@ -3,7 +3,11 @@ import io
 import json
 import math
 import os
+from collections import defaultdict
 from typing import Literal
+import plotly.graph_objects as go
+import numpy as np
+import textwrap
 
 import mlflow
 import numpy as np
@@ -166,8 +170,6 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
     mlflow.log_text(json_buffer.getvalue(), artifact_file='resultados/rotulos_formatados.json')
     json_buffer.close()
 
-
-
     mlflow.log_params(
         {
             "raio": float(raio),
@@ -203,10 +205,6 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
         "u_matrix_std": float(tf.math.reduce_std(u_matrix).numpy()),
         "u_matrix_max": float(tf.reduce_max(u_matrix).numpy()),
     })
-
-
-
-
 
     # Métricas
     qe = som_v2.calcular_erro_quantizacao(tf.convert_to_tensor(embeddings_nomr))
@@ -285,8 +283,6 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
     )
 
     plt.close()
-
-
 
     densidade_np = densidade.numpy()
     plt.figure(figsize=(8, 6))
@@ -473,6 +469,108 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
     plt.tight_layout()
     mlflow.log_figure(plt.gcf(), 'fig/cluster_som.png')
     plt.close()
+
+    clusters_temp = defaultdict(list)
+
+    for idx_amostra, indice_neuronio in enumerate(indices_bmu):
+        cluster_id = int(cluster_labels[indice_neuronio])
+
+        comentario = dataframe_comentarios[
+            'texto_comentario'
+        ].iloc[idx_amostra]
+
+        clusters_temp[cluster_id].append(comentario)
+
+    # -----------------------------------------
+    # 3️⃣ Converter para lista de dicionários
+    # -----------------------------------------
+    lista_clusters = []
+
+    for cluster_id in sorted(clusters_temp.keys()):
+        lista_clusters.append({
+            "cluster_id": cluster_id,
+            "total_comentarios": len(clusters_temp[cluster_id]),
+            "comentarios": clusters_temp[cluster_id]
+        })
+
+    json_buffer = io.StringIO()
+    json.dump(lista_clusters, json_buffer, indent=4, ensure_ascii=False)
+    json_buffer.seek(0)
+    mlflow.log_text(json_buffer.getvalue(), artifact_file='resultados/clusters_comentarios.json')
+    json_buffer.close()
+
+    linhas = som_v2.linhas
+    colunas = som_v2.colunas
+
+    # Matriz base apenas para manter grid
+    z = np.zeros((linhas, colunas))
+
+    fig = go.Figure()
+
+    # Heatmap base invisível (para manter estrutura)
+    fig.add_trace(
+        go.Heatmap(
+            z=z,
+            colorscale="Greys",
+            showscale=False,
+            opacity=0.05
+        )
+    )
+
+    # Adiciona rótulos como scatter
+    x_coords = []
+    y_coords = []
+    textos_hover = []
+    textos_display = []
+
+    for chave, texto in rotulos_formatados.items():
+        coords = chave.split(":")[0].strip("() ")
+        i, j = map(int, coords.split(","))
+
+        x_coords.append(j)
+        y_coords.append(i)
+
+        # Texto curto exibido
+        resumo = textwrap.shorten(texto, width=40, placeholder="...")
+        textos_display.append(resumo)
+
+        # Texto completo no hover
+        textos_hover.append(texto)
+
+    fig.add_trace(
+        go.Scatter(
+            x=x_coords,
+            y=y_coords,
+            mode="text",
+            text=textos_display,
+            hovertext=textos_hover,
+            hoverinfo="text",
+            textfont=dict(size=11),
+        )
+    )
+
+    fig.update_layout(
+        title="Mapa Estratégico de Percepção dos Usuários (SOM)",
+        xaxis=dict(
+            title="Dimensão Latente 1",
+            tickmode="linear",
+            dtick=1
+        ),
+        yaxis=dict(
+            title="Dimensão Latente 2",
+            tickmode="linear",
+            dtick=1,
+            autorange="reversed"
+        ),
+        width=900,
+        height=800
+    )
+
+    fig.update_xaxes(range=[-0.5, colunas - 0.5])
+    fig.update_yaxes(range=[linhas - 0.5, -0.5])
+
+    # Log no MLflow
+    mlflow.log_figure(fig, "fig/mapa_rotulado_plotly.html")
 
     mlflow.tensorflow.log_model(
         model=som_v2,
