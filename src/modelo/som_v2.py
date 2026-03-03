@@ -89,8 +89,13 @@ class SOMV2(tf.Module):
             -passo_atual / total_passos
         )
 
-        sigma = self._sigma * tf.exp(
-            -passo_atual / total_passos
+        # sigma = self._sigma * tf.exp(
+        #     -passo_atual / total_passos
+        # )
+
+        sigma = tf.maximum(
+            self._sigma * tf.exp(-passo_atual / total_passos),
+            0.5  # valor mínimo do raio
         )
 
         # -----------------------------------
@@ -173,10 +178,13 @@ class SOMV2(tf.Module):
             self,
             dataset: tf.data.Dataset,
             epocas: int,
-            logdir: Optional[str] = None
+            logdir: Optional[str] = None,
+            min_delta: float = 1e-4,
+            patience: int = 50
     ):
         """
-        Treina o SOM e grava métricas no TensorBoard, incluindo o grafo.
+        Treina o SOM com Early Stopping baseado no QE.
+        Mantém TensorBoard e tqdm.
         """
 
         if logdir is None:
@@ -185,9 +193,10 @@ class SOMV2(tf.Module):
                 "SOM",
                 datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
             )
+
         writer = tf.summary.create_file_writer(logdir)
 
-        # Concatena todo dataset para cálculo de métricas
+        # Concatena dataset completo para métricas
         X_completo = tf.concat([x for x in dataset], axis=0)
         num_batches = sum(1 for _ in dataset)
         total_passos = tf.constant(epocas * num_batches, dtype=tf.float32)
@@ -195,21 +204,29 @@ class SOMV2(tf.Module):
         self.historico_qe = []
         self.historico_te = []
 
-        print("\nIniciando treinamento do SOM (TensorBoard)")
+        melhor_qe = float("inf")
+        paciencia_atual = 0
+        melhor_pesos = None
+        melhor_epoca = 0
+
+        print("\nIniciando treinamento do SOM (TensorBoard + EarlyStopping)")
         print(f"Grid: {self._linhas}x{self._colunas}")
         print(f"Dimensão vetorial: {self._dimensao}")
         print(f"Total neurônios: {self.total_neuronios}")
-        print(f"Épocas: {epocas}")
+        print(f"Épocas máximas: {epocas}")
         print(f"Batches por época: {num_batches}")
-        print("-" * 50)
+        print(f"EarlyStopping -> min_delta={min_delta}, patience={patience}")
+        print("-" * 60)
 
-        # --------------------------
-        # Registrar grafo SOM (sem erro de profiler)
-        # --------------------------
+        # Registrar grafo
         with writer.as_default():
-            tf.summary.trace_on(graph=True)  # apenas o grafo, sem profiler
+            tf.summary.trace_on(graph=True)
 
+        # ===========================
+        # Loop de treinamento
+        # ===========================
         for epoca in range(epocas):
+
             for lote in tqdm(dataset, leave=False):
                 taxa, sigma = self.passo_treinamento(
                     lote,
@@ -218,35 +235,58 @@ class SOMV2(tf.Module):
                 )
                 self._global_step += 1
 
-            # --------------------------
-            # Métricas após cada época
-            # --------------------------
+            # ---- Métricas por época ----
             qe = self.calcular_erro_quantizacao(X_completo)
             te = self.calcular_erro_topografico(X_completo)
 
-            self.historico_qe.append(qe.numpy())
-            self.historico_te.append(te.numpy())
+            qe_val = qe.numpy()
+            te_val = te.numpy()
+
+            self.historico_qe.append(qe_val)
+            self.historico_te.append(te_val)
 
             print(
-                f"Época {epoca + 1}/{epocas} concluída | "
-                f"QE: {qe.numpy():.6f} | TE: {te.numpy():.6f}"
+                f"Época {epoca + 1}/{epocas} | "
+                f"QE: {qe_val:.6f} | TE: {te_val:.6f}"
             )
 
+            # ===========================
+            # Early Stopping
+            # ===========================
+            if melhor_qe - qe_val > min_delta:
+                melhor_qe = qe_val
+                paciencia_atual = 0
+                melhor_epoca = epoca
+                melhor_pesos = tf.identity(self.pesos)
+            else:
+                paciencia_atual += 1
+
+            # TensorBoard logging
             with writer.as_default():
                 tf.summary.scalar("QE", qe, step=epoca)
                 tf.summary.scalar("TE", te, step=epoca)
+                tf.summary.scalar("Patience", paciencia_atual, step=epoca)
                 tf.summary.histogram("Pesos SOM", self.pesos, step=epoca)
 
-                # U-Matrix como imagem
                 u_matrix = self.distance_map().numpy()
-                u_matrix = np.expand_dims(u_matrix, axis=-1)  # (lin, col, 1)
-                u_matrix = np.expand_dims(
-                    u_matrix, axis=0)  # (1, lin, col, 1)
+                u_matrix = np.expand_dims(u_matrix, axis=-1)
+                u_matrix = np.expand_dims(u_matrix, axis=0)
                 tf.summary.image("U-Matrix", u_matrix, step=epoca)
 
-        # --------------------------
-        # Exporta grafo SOM
-        # --------------------------
+            # Condição de parada
+            if paciencia_atual >= patience:
+                print("\nEarly stopping ativado!")
+                print(f"Melhor QE: {melhor_qe:.6f} na época {melhor_epoca + 1}")
+                break
+
+        # ===========================
+        # Restaurar melhor modelo
+        # ===========================
+        if melhor_pesos is not None:
+            self.pesos.assign(melhor_pesos)
+            print(f"Pesos restaurados para época {melhor_epoca + 1}")
+
+        # Exportar grafo
         with writer.as_default():
             tf.summary.trace_export(
                 name="grafo_som",

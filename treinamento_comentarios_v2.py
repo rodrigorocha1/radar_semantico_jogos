@@ -120,15 +120,24 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
     densidade = som_v2.obter_resposta_ativacao(embeddings_nomr)
 
     neuronio_vencedor = som_v2.obter_neuronio_vencedor(embeddings_nomr[1])
-    lista_neuronios_vencedor = [
+    indices_bmu, coordenadas_bmu = som_v2.mapear(embeddings_nomr)
+
+    neuronios_vencedores_unicos = sorted(
+        np.unique(indices_bmu.numpy()).tolist()
+    )
+    coordenadas = som_v2(tf.convert_to_tensor(embeddings_nomr, dtype=tf.float32))
+
+    lista_neuronios_vencedores = [
         {
-            f'comentário_{chave}': f'neurônio_vencedor_{som_v2.obter_neuronio_vencedor(embeddings_nomr[chave])}'
+            "indice_embedding": i,
+            "linha": int(coord[0].numpy()),
+            "coluna": int(coord[1].numpy())
         }
-        for chave, valor in enumerate(embeddings_nomr)
+        for i, coord in enumerate(coordenadas)
     ]
 
     json_buffer = io.StringIO()
-    json.dump(lista_neuronios_vencedor, json_buffer, indent=4, ensure_ascii=False)
+    json.dump(lista_neuronios_vencedores, json_buffer, indent=4, ensure_ascii=False)
     json_buffer.seek(0)
     mlflow.log_text(json_buffer.getvalue(), artifact_file='resultados/neuronio_vencedor.json')
     json_buffer.close()
@@ -138,8 +147,8 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
         embeddings=embeddings_nomr,
         min_docs=3
     )
-    indices_bmu, coords = som_v2.mapear(embeddings_nomr)
-    coords = coords.numpy()
+
+    coords = coordenadas_bmu.numpy()
     coords_list = [(int(i), int(j)) for (i, j) in coords]
 
     rotulos_formatados = {
@@ -154,25 +163,47 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
     mlflow.log_text(json_buffer.getvalue(), artifact_file='resultados/rotulos_formatados.json')
     json_buffer.close()
 
+
+
     mlflow.log_params(
         {
-            "raio": raio,
-            "linhas": som_v2.linhas,
-            "colunas": som_v2.colunas,
-            "dimensao": som_v2.dimensao,
-            "taxa_aprendizado": som_v2.taxa_aprendizado,
-            "sigma_inicial": som_v2.sigma,
-            "metrica": som_v2.metrica,
-            "epocas": epocas,
-            "batch_size": batch_size,
-            "total_amostras": embeddings_nomr.shape[0],
-            "pesos": som_v2.pesos,
-            "shape_mapa_ativacao": mapa.shape,
-            "total_neuronios": som_v2.total_neuronios,
-            "resposta": resposta,
-            "media_das_distancias": som_v2.distance_map(),
-            "sigma": sigma,
-        })
+            "raio": float(raio),
+            "linhas": int(som_v2.linhas),
+            "colunas": int(som_v2.colunas),
+            "dimensao": int(som_v2.dimensao),
+            "taxa_aprendizado": float(som_v2.taxa_aprendizado),
+            "sigma_inicial": float(som_v2.sigma),
+            "metrica": str(som_v2.metrica),
+            "epocas": int(epocas),
+            "batch_size": int(batch_size),
+            "total_amostras": int(embeddings_nomr.shape[0]),
+            "total_neuronios": int(som_v2.total_neuronios),
+            "shape_mapa_ativacao": str(mapa.shape),
+            "sigma_final_configurado": float(sigma),
+        }
+    )
+
+    pesos_np = som_v2.pesos.numpy()
+    np.save("pesos_som.npy", pesos_np)
+    mlflow.log_artifact("pesos_som.npy", artifact_path="matrizes")
+    os.remove("pesos_som.npy")
+
+    resposta_np = resposta.numpy()
+    np.save("resposta_ativacao.npy", resposta_np)
+    mlflow.log_artifact("resposta_ativacao.npy", artifact_path="matrizes")
+    os.remove("resposta_ativacao.npy")
+
+    u_matrix = som_v2.distance_map()
+
+    mlflow.log_metrics({
+        "u_matrix_mean": float(tf.reduce_mean(u_matrix).numpy()),
+        "u_matrix_std": float(tf.math.reduce_std(u_matrix).numpy()),
+        "u_matrix_max": float(tf.reduce_max(u_matrix).numpy()),
+    })
+
+
+
+
 
     # Métricas
     qe = som_v2.calcular_erro_quantizacao(tf.convert_to_tensor(embeddings_nomr))
@@ -200,16 +231,59 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
             comentarios_cluster.append(texto)
 
     # WordCloud
-    if comentarios_cluster:
-        texto_cluster = ' '.join(comentarios_cluster)
-        wordcloud = WordCloud(width=600, height=400, background_color='white').generate(texto_cluster)
-        plt.figure(figsize=(10, 6))
-        plt.imshow(wordcloud, interpolation='bilinear')
-        plt.axis('off')
-        plt.title(f'Wordcloud do neurônio mais populoso ({neur_vencedor})')
+    indices_bmu = indices_bmu.numpy()
 
-        mlflow.log_figure(plt.gcf(), 'fig/wordcloud_neuronio_populoso.png')
-        plt.close()
+    clusters = {}
+
+    for idx, neur in enumerate(indices_bmu):
+        clusters.setdefault(int(neur), []).append(
+            dataframe_comentarios['texto_comentario'].iloc[idx]
+        )
+
+    neuronios_vencedores_unicos = sorted(clusters.keys())
+
+    print(f"Neurônios ativos: {neuronios_vencedores_unicos}")
+
+    # ===============================
+    # Plot grid controlado
+    # ===============================
+
+    from math import ceil
+
+    num_cols = 4
+    num_rows = ceil(len(neuronios_vencedores_unicos) / num_cols)
+
+    plt.figure(figsize=(15, 4 * num_rows))
+
+    for plot_idx, neur in enumerate(neuronios_vencedores_unicos):
+        comentarios_cluster = clusters[neur]
+
+        if not comentarios_cluster:
+            continue
+
+        texto_cluster = " ".join(comentarios_cluster)
+
+        wordcloud = WordCloud(
+            width=400,
+            height=300,
+            background_color="white"
+        ).generate(texto_cluster)
+
+        plt.subplot(num_rows, num_cols, plot_idx + 1)
+        plt.imshow(wordcloud, interpolation="bilinear")
+        plt.axis("off")
+        plt.title(f"Neurônio {neur}")
+
+    plt.tight_layout()
+
+    mlflow.log_figure(
+        plt.gcf(),
+        "fig/wordclouds_neuronios.png"
+    )
+
+    plt.close()
+
+
 
     densidade_np = densidade.numpy()
     plt.figure(figsize=(8, 6))
