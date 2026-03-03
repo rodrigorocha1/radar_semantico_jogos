@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from langdetect import detect
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 from src.modelo.modelo_som import SOM
@@ -25,6 +26,39 @@ def is_english(text):
     except:
         return False
 
+
+def calcular_r_via_pca(base, normalizar=True):
+    """
+    Calcula r = lambda1 / lambda2 via PCA.
+
+    Parâmetros:
+        X : numpy array (n_amostras, dimensao)
+        normalizar : bool → aplica normalização antes da PCA
+
+    Retorna:
+        r : razão estrutural
+        lambda1 : maior autovalor
+        lambda2 : segundo autovalor
+    """
+
+    # Opcional: normalização
+    if normalizar:
+        base = StandardScaler().fit_transform(base)
+
+    # PCA apenas com 2 componentes
+    pca = PCA(n_components=2)
+    pca.fit(base)
+
+    lambda1 = pca.explained_variance_[0]
+    lambda2 = pca.explained_variance_[1]
+
+    r = lambda1 / lambda2
+
+    print(f"Lambda1: {lambda1:.6f}")
+    print(f"Lambda2: {lambda2:.6f}")
+    print(f"r (lambda1/lambda2): {r:.4f}")
+
+    return r, lambda1, lambda2
 
 obddb = OperacoesBancoDuckDb()
 
@@ -47,23 +81,17 @@ dataframe_comentarios = dataframe_comentarios.dropna()
 # dataframe_comentarios = dataframe_comentarios.head(100)
 # print(dataframe_comentarios.shape)
 
-
-total_neuronios = 5 * math.sqrt(dataframe_comentarios.shape[0])
-
-tamnho_batch = 64
 dataframe_comentarios["embedings"] = dataframe_comentarios["embedings"].apply(
     ast.literal_eval
 )
 
+r, l1, l2 = calcular_r_via_pca(dataframe_comentarios["embedings"] )
 
+total_neuronios = 5 * math.sqrt(dataframe_comentarios.shape[0])
+tamnho_batch = 64
 batches = dataframe_comentarios.shape[0] // tamnho_batch
-
-
 epocas = 4000 // 102
-
-
 scaler = StandardScaler()
-
 embeddings_nomr = scaler.fit_transform(
     dataframe_comentarios['embedings'].tolist())
 

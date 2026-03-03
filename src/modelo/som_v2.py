@@ -669,3 +669,27 @@ class SOMV2(tf.Module):
         )
 
         return coordenadas
+
+    @property
+    def linhas(self):
+        return self._linhas
+
+    @property
+    def colunas(self):
+        return self._colunas
+
+    @property
+    def dimensao(self):
+        return self._dimensao
+
+    @property
+    def taxa_aprendizado(self):
+        return self._taxa_aprendizado
+
+    @property
+    def sigma(self):
+        return self._sigma
+
+    @property
+    def metrica(self):
+        return self._metrica
