@@ -3,12 +3,12 @@ import io
 import json
 import math
 import os
-from collections import defaultdict
-from typing import Literal
-import plotly.graph_objects as go
-import numpy as np
-import textwrap
+import re
 
+SEED = 42
+os.environ["PYTHONHASHSEED"] = str(SEED)
+from typing import Literal
+import random
 import mlflow
 import numpy as np
 import seaborn as sns
@@ -24,6 +24,11 @@ from wordcloud import WordCloud
 
 from src.modelo.som_v2 import SOMV2
 from src.servicos.banco.operacoes_banco import OperacoesBancoDuckDb
+
+random.seed(SEED)
+np.random.seed(SEED)
+tf.random.set_seed(SEED)
+tf.config.experimental.enable_op_determinism()
 
 
 # ---------------- MLflow ----------------
@@ -99,8 +104,9 @@ metrica: Literal["cosseno"] = "cosseno"
 sigma = 1
 batch_size = int(math.sqrt(total_neuronios))
 taxa_aprendizado = 0.5 / math.sqrt(batch_size)
-# epocas = max(50, int((500 * linhas * colunas * batch_size) / dataframe_comentarios.shape[0]))
-epocas = 5
+epocas = max(50, int((500 * linhas * colunas * batch_size) / dataframe_comentarios.shape[0]))
+
+random_state = 42
 
 som_v2 = SOMV2(
     linhas=linhas,
@@ -108,14 +114,19 @@ som_v2 = SOMV2(
     dimensao=dimensao_som,
     taxa_aprendizado=taxa_aprendizado,
     metrica=metrica,
-    sigma=sigma
+    sigma=sigma,
+    random_state=42
 )
 
 dataset = (
     tf.data.Dataset
     .from_tensor_slices(embeddings_nomr.astype(np.float32))
-    .shuffle(buffer_size=len(embeddings_nomr))
-    .batch(batch_size)
+    .shuffle(
+        buffer_size=len(embeddings_nomr),
+        seed=SEED,
+        reshuffle_each_iteration=False  # CRÍTICO
+    )
+    .batch(batch_size, drop_remainder=False)
 )
 
 som_v2.treinar(dataset, epocas=epocas)
@@ -125,10 +136,8 @@ resposta = som_v2.obter_resposta_ativacao(embeddings_nomr)
 
 with mlflow.start_run(run_name='SOM Comentários') as run:
     densidade = som_v2.obter_resposta_ativacao(embeddings_nomr)
-
     neuronio_vencedor = som_v2.obter_neuronio_vencedor(embeddings_nomr[1])
     indices_bmu, coordenadas_bmu = som_v2.mapear(embeddings_nomr)
-
     neuronios_vencedores_unicos = sorted(
         np.unique(indices_bmu.numpy()).tolist()
     )
@@ -156,6 +165,7 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
     )
 
     coords = coordenadas_bmu.numpy()
+
     coords_list = [(int(i), int(j)) for (i, j) in coords]
 
     rotulos_formatados = {
@@ -185,6 +195,7 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
             "total_neuronios": int(som_v2.total_neuronios),
             "shape_mapa_ativacao": str(mapa.shape),
             "sigma_final_configurado": float(sigma),
+            "random_state": int(random_state),
         }
     )
 
@@ -232,59 +243,35 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
             comentarios_cluster.append(texto)
 
     # WordCloud
-    indices_bmu = indices_bmu.numpy()
+    for key, label in rotulos_formatados.items():
+        match = re.search(r'\((\d+),\s*(\d+)\)', key)
+        if match:
+            linha = int(match.group(1))
+            coluna = int(match.group(2))
 
-    clusters = {}
+        else:
+            print(f"Não foi possível extrair coordenadas de {key}")
 
-    for idx, neur in enumerate(indices_bmu):
-        clusters.setdefault(int(neur), []).append(
-            dataframe_comentarios['texto_comentario'].iloc[idx]
-        )
+        wc = WordCloud(
+            width=400, height=400, background_color="white",
+            colormap="plasma", max_font_size=80
+        ).generate(texto)
 
-    neuronios_vencedores_unicos = sorted(clusters.keys())
-
-    print(f"Neurônios ativos: {neuronios_vencedores_unicos}")
-
-    # ===============================
-    # Plot grid controlado
-    # ===============================
-
-    from math import ceil
-
-    num_cols = 4
-    num_rows = ceil(len(neuronios_vencedores_unicos) / num_cols)
-
-    plt.figure(figsize=(15, 4 * num_rows))
-
-    for plot_idx, neur in enumerate(neuronios_vencedores_unicos):
-        comentarios_cluster = clusters[neur]
-
-        if not comentarios_cluster:
-            continue
-
-        texto_cluster = " ".join(comentarios_cluster)
-
-        wordcloud = WordCloud(
-            width=400,
-            height=300,
-            background_color="white"
-        ).generate(texto_cluster)
-
-        plt.subplot(num_rows, num_cols, plot_idx + 1)
-        plt.imshow(wordcloud, interpolation="bilinear")
+        plt.figure(figsize=(6, 6))
+        plt.imshow(wc, interpolation="bilinear")
         plt.axis("off")
-        plt.title(f"Neurônio {neur}")
+        plt.title(f"Neurônio ({linha}, {coluna})")
 
-    plt.tight_layout()
+        mlflow.log_figure(plt.gcf(), f'fig/wordcloud_{linha}_{coluna}.png')
+        plt.close()
 
-    mlflow.log_figure(
-        plt.gcf(),
-        "fig/wordclouds_neuronios.png"
-    )
-
-    plt.close()
+    ######
 
     densidade_np = densidade.numpy()
+    print('-' * 20)
+    print(densidade)
+    print(densidade_np)
+    print('-' * 20)
     plt.figure(figsize=(8, 6))
     sns.heatmap(
         densidade_np, annot=True, fmt="d", cmap="viridis",
@@ -422,7 +409,7 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
     pesos = som_v2.obter_pesos(flatten=True)
 
     for k in range_k:
-        kmeans = KMeans(n_clusters=k, random_state=42, n_init=20)
+        kmeans = KMeans(n_clusters=k, random_state=random_state, n_init=20)
         labels = kmeans.fit_predict(pesos)
 
         # Garante que existem pelo menos 2 clusters reais
@@ -470,107 +457,94 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
     mlflow.log_figure(plt.gcf(), 'fig/cluster_som.png')
     plt.close()
 
-    clusters_temp = defaultdict(list)
+    ### Calcular centroides por neurônio
 
-    for idx_amostra, indice_neuronio in enumerate(indices_bmu):
-        cluster_id = int(cluster_labels[indice_neuronio])
+    from collections import defaultdict
+    import numpy as np
 
-        comentario = dataframe_comentarios[
-            'texto_comentario'
-        ].iloc[idx_amostra]
+    clusters_indices = defaultdict(list)
 
-        clusters_temp[cluster_id].append(comentario)
+    # Mapear índices por neurônio
+    for idx, coord in enumerate(coords):
+        i, j = int(coord[0]), int(coord[1])
+        clusters_indices[(i, j)].append(idx)
 
-    # -----------------------------------------
-    # 3️⃣ Converter para lista de dicionários
-    # -----------------------------------------
-    lista_clusters = []
-
-    for cluster_id in sorted(clusters_temp.keys()):
-        lista_clusters.append({
-            "cluster_id": cluster_id,
-            "total_comentarios": len(clusters_temp[cluster_id]),
-            "comentarios": clusters_temp[cluster_id]
-        })
-
+    centroides = {}
+    for chave, indices in clusters_indices.items():
+        if len(indices) > 1:
+            centroides[chave] = np.mean(embeddings_nomr[indices], axis=0)
+    centroides_json = {str(k): v.tolist() for k, v in centroides.items()}
     json_buffer = io.StringIO()
-    json.dump(lista_clusters, json_buffer, indent=4, ensure_ascii=False)
+
+    json.dump(centroides_json, json_buffer, indent=4, ensure_ascii=False)
     json_buffer.seek(0)
-    mlflow.log_text(json_buffer.getvalue(), artifact_file='resultados/clusters_comentarios.json')
+    mlflow.log_text(json_buffer.getvalue(), artifact_file='resultados/centroides.json')
     json_buffer.close()
 
-    linhas = som_v2.linhas
-    colunas = som_v2.colunas
+    # Clusterizar os centroides (Macrotemas)
 
-    # Matriz base apenas para manter grid
-    z = np.zeros((linhas, colunas))
+    X = np.array(list(centroides.values()))
+    ks = range(2, 11)
+    inertias = []
+    silhouettes = []
 
-    fig = go.Figure()
+    best_score = -1
+    best_k = None
 
-    # Heatmap base invisível (para manter estrutura)
-    fig.add_trace(
-        go.Heatmap(
-            z=z,
-            colorscale="Greys",
-            showscale=False,
-            opacity=0.05
-        )
-    )
+    for k in ks:
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        labels = kmeans.fit_predict(X)
+        inertias.append(kmeans.inertia_)
 
-    # Adiciona rótulos como scatter
-    x_coords = []
-    y_coords = []
-    textos_hover = []
-    textos_display = []
+        # Silhouette Score correto
+        if len(np.unique(labels)) > 1:
+            score = silhouette_score(X, labels)
+            silhouettes.append(score)
 
-    for chave, texto in rotulos_formatados.items():
-        coords = chave.split(":")[0].strip("() ")
-        i, j = map(int, coords.split(","))
+            if score > best_score:
+                best_score = score
+                best_k = k
 
-        x_coords.append(j)
-        y_coords.append(i)
+    mlflow.log_metric("silhouette_score_centroide", best_score)
+    mlflow.log_metric("k_centroide", best_k)
 
-        # Texto curto exibido
-        resumo = textwrap.shorten(texto, width=40, placeholder="...")
-        textos_display.append(resumo)
+    plt.figure(figsize=(12, 5))
+    plt.subplot(1, 2, 1)
+    plt.plot(ks, inertias, marker='o')
+    plt.title("Método do Cotovelo")
+    plt.xlabel("Número de clusters (k)")
+    plt.ylabel("Inércia")
 
-        # Texto completo no hover
-        textos_hover.append(texto)
+    # Plot do Silhouette Score
+    plt.subplot(1, 2, 2)
+    plt.plot(ks, silhouettes, marker='o', color='orange')
+    plt.title("Silhouette Score")
+    plt.xlabel("Número de clusters (k)")
+    plt.ylabel("Silhouette Score")
 
-    fig.add_trace(
-        go.Scatter(
-            x=x_coords,
-            y=y_coords,
-            mode="text",
-            text=textos_display,
-            hovertext=textos_hover,
-            hoverinfo="text",
-            textfont=dict(size=11),
-        )
-    )
+    plt.tight_layout()
+    mlflow.log_figure(plt.gcf(), 'fig/cluster_centroide_macrotema.png')
+    plt.close()
 
-    fig.update_layout(
-        title="Mapa Estratégico de Percepção dos Usuários (SOM)",
-        xaxis=dict(
-            title="Dimensão Latente 1",
-            tickmode="linear",
-            dtick=1
-        ),
-        yaxis=dict(
-            title="Dimensão Latente 2",
-            tickmode="linear",
-            dtick=1,
-            autorange="reversed"
-        ),
-        width=900,
-        height=800
-    )
+    X = np.array(list(centroides.values()))
+    chaves = list(centroides.keys())
 
-    fig.update_xaxes(range=[-0.5, colunas - 0.5])
-    fig.update_yaxes(range=[linhas - 0.5, -0.5])
+ # número de macrotemas
+    kmeans = KMeans(n_clusters=best_k, random_state=42)
+    labels_macro = kmeans.fit_predict(X)
 
-    # Log no MLflow
-    mlflow.log_figure(fig, "fig/mapa_rotulado_plotly.html")
+    macrotemas = {}
+
+    for chave, label in zip(chaves, labels_macro):
+        macrotemas.setdefault(label, []).append(chave)
+    print(macrotemas)
+
+    macrotemas_json = {str(k): v for k, v in macrotemas.items()}
+    json_buffer = io.StringIO()
+    json.dump(macrotemas_json, json_buffer, indent=4, ensure_ascii=False)
+    json_buffer.seek(0)
+    mlflow.log_text(json_buffer.getvalue(), artifact_file='resultados/macrotemas.json')
+    json_buffer.close()
 
     mlflow.tensorflow.log_model(
         model=som_v2,

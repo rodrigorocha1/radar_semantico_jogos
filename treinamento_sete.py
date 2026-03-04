@@ -1,87 +1,57 @@
+from wordcloud import WordCloud
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import spacy
-from minisom import MiniSom
-from sklearn.feature_extraction.text import TfidfVectorizer
 
-# Carregar SpaCy para tokenização e lematização
-nlp = spacy.load("pt_core_news_lg")
-
-# Exemplo de DataFrame
-data = {
-    "id_texto": [218261480, 218139992, 218042630, 218041328, 218038914],
-    "codigo_steam": [105600]*5,
-    "nome_jogo": ["terraria"]*5,
-    "texto_comentario": [
-        "E POGGERS",
-        "oi",
-        "Better than life",
-        "tuffo",
-        "E MUITO BOM E ME DA UM POUCI DE MEDO NA CAVERNA"
-    ]
+# Seus dados de comentários por neurônio
+comentarios_map = {
+    "(0, 0)": "Pare de procurar analises ruins, esse jogo não tem defeitos, apenas compre imediatamente.",
+    "(0, 1)": "gostaria que em atualizações posteriores, o modo de como o duke fishron é invocado mudasse...",
+    "(0, 2)": "Terraria é muito mais do que um simples jogo 2D. É uma experiência profunda, versátil e altamente viciante...",
+    "(0, 3)": "Jogo Maravilhoso eu adorei a Gameplay dele é incrível além de que o suspense e o mistério...",
+    "(0, 4)": "Jogo Ótimo, Comprei um pc, baixei a steam, comprei o jogo a preço de pão...",
+    "(1, 0)": "Massa demais!",
+    "(1, 2)": "Pra quem gosta de pescar a missão do pescador é perfeita, mas sinceramente...",
+    "(1, 3)": "melhor jogo da historia",
+    "(1, 4)": "jogo véi peba",
+    "(2, 0)": "rumo as 1000 horas de jogatina",
+    "(2, 1)": "legal",
+    "(2, 2)": "tipo minecraft",
+    "(2, 4)": "bom jogo!!!",
+    "(3, 0)": "incrivel jogari mais",
+    "(3, 1)": "Bacana.",
+    "(3, 2)": "MARAVILHOSO",
+    "(3, 3)": "Terra.",
+    "(3, 4)": "muito bom o jogo super recomendo",
+    "(4, 0)": "muitobom",
+    "(4, 1)": "Jogo otimo, Maravilhoso, é um Minecraft 1 google melhor",
+    "(4, 2)": "é terraria né, n tem nem oq falar",
+    "(4, 3)": "Por mais que tenha só 1hora de gameplay, eu já platinei esse jogo no celular...",
+    "(4, 4)": "muito bom tem muita coisa para fazer uns bosses um pouco dificils mas muito bom",
 }
-df = pd.DataFrame(data)
 
-# Lista de jogos (apenas exemplo simplificado)
-lista_jogos = [
-    (105600, "terraria")
-]
+# Descobrir tamanho do grid
+linhas = max(int(k.split(',')[0][1:]) for k in comentarios_map.keys()) + 1
+colunas = max(int(k.split(',')[1][:-1]) for k in comentarios_map.keys()) + 1
 
-# ----------------------------
-# 1. Pré-processamento
-# ----------------------------
+fig, axes = plt.subplots(linhas, colunas, figsize=(colunas*6, linhas*6))
 
+for i in range(linhas):
+    for j in range(colunas):
+        ax = axes[i, j]
+        key = f"({i}, {j})"
+        ax.axis("off")
+        if key in comentarios_map:
+            wc = WordCloud(
+                width=400,
+                height=400,
+                background_color="white",
+                colormap="plasma",
+                max_font_size=80,    # Aumenta o tamanho máximo da fonte
+                min_font_size=10,
+                font_step=2
+            ).generate(comentarios_map[key])
+            ax.imshow(wc, interpolation="bilinear")
+            ax.set_title(f"Posição -> {key}", fontsize=16, fontweight='bold')  # Título maior
 
-def preprocess_text(texts):
-    processed_texts = []
-    for doc in nlp.pipe(texts, batch_size=20):
-        tokens = [token.lemma_.lower() for token in doc
-                  if not token.is_stop and token.is_alpha]
-        processed_texts.append(" ".join(tokens))
-    return processed_texts
-
-
-df['texto_limpo'] = preprocess_text(df['texto_comentario'])
-
-# ----------------------------
-# 2. Vetorização
-# ----------------------------
-vectorizer = TfidfVectorizer(max_features=100)
-X = vectorizer.fit_transform(df['texto_limpo']).toarray()
-print(X.shape)
-
-# # ----------------------------
-# # 3. Treinamento do SOM
-# # ----------------------------
-# som_size = 5  # tamanho do grid 5x5
-# som = MiniSom(som_size, som_size, X.shape[1], sigma=1.0, learning_rate=0.5)
-# som.random_weights_init(X)
-# som.train_random(X, 100)  # 100 iterações de treino
-
-# # ----------------------------
-# # 4. Atribuição de clusters
-# # ----------------------------
-
-
-# def get_cluster_coordinates(vector):
-#     return som.winner(vector)
-
-
-# df['cluster'] = [get_cluster_coordinates(x) for x in X]
-
-# print(df[['texto_comentario', 'texto_limpo', 'cluster']])
-
-# # ----------------------------
-# # 5. Visualização do SOM
-# # ----------------------------
-# # Criar heatmap simples: número de comentários por cluster
-# heatmap = np.zeros((som_size, som_size))
-# for coord in df['cluster']:
-#     heatmap[coord] += 1
-
-# plt.figure(figsize=(6, 6))
-# plt.imshow(heatmap, cmap='coolwarm')
-# plt.colorbar()
-# plt.title("Heatmap SOM - número de comentários por cluster")
-# plt.show()
+plt.tight_layout()
+plt.savefig('exemplo.png')
+plt.close()

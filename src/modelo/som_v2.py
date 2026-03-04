@@ -7,6 +7,7 @@ import tensorflow as tf
 from tqdm import tqdm
 
 
+
 class SOMV2(tf.Module):
 
     def __init__(
@@ -17,8 +18,14 @@ class SOMV2(tf.Module):
             taxa_aprendizado: float = 0.5,
             sigma: float = 1.0,
             metrica: Literal["euclidiana", "cosseno"] = "euclidiana",
+            random_state: Optional[int] = None,
+
     ):
         super().__init__()
+        self.__random_state = random_state
+
+
+
         self._linhas = linhas
         self._colunas = colunas
         self._dimensao = dimensao
@@ -46,14 +53,13 @@ class SOMV2(tf.Module):
         # -----------------------------
         # Inicializa pesos
         # -----------------------------
+        self._rng = tf.random.Generator.from_seed(random_state)
+
         self.pesos = tf.Variable(
-            tf.random.normal(
-                shape=[self._linhas, self._colunas, self._dimensao],
-                mean=0.0,
-                stddev=1.0,
+            self._rng.normal(
+                shape=[self.linhas, self.colunas, self.dimensao],
                 dtype=tf.float32
-            ),
-            trainable=False
+            )
         )
 
     # ==========================================================
