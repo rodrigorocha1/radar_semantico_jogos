@@ -5,6 +5,9 @@ import math
 import os
 import re
 
+import plotly.graph_objects as go
+import plotly.io as pio
+
 SEED = 42
 os.environ["PYTHONHASHSEED"] = str(SEED)
 from typing import Literal
@@ -105,7 +108,7 @@ sigma = 1
 batch_size = int(math.sqrt(total_neuronios))
 taxa_aprendizado = 0.5 / math.sqrt(batch_size)
 epocas = max(50, int((500 * linhas * colunas * batch_size) / dataframe_comentarios.shape[0]))
-
+epocas = 5
 random_state = 42
 
 som_v2 = SOMV2(
@@ -529,7 +532,7 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
     X = np.array(list(centroides.values()))
     chaves = list(centroides.keys())
 
- # número de macrotemas
+    # número de macrotemas
     kmeans = KMeans(n_clusters=best_k, random_state=42)
     labels_macro = kmeans.fit_predict(X)
 
@@ -572,6 +575,10 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
     mlflow.log_text(json_buffer.getvalue(), artifact_file='resultados/macrotemas_coords.json')
     json_buffer.close()
 
+
+    # Gráfico macrotema
+
+
     # Criar matriz do SOM para plotagem (linhas x colunas)
     mapa_macrotema = np.full((som_v2.linhas, som_v2.colunas), -1, dtype=int)
 
@@ -603,7 +610,6 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
     # Log no MLflow
     mlflow.log_figure(plt.gcf(), 'fig/som_macrotemas.png')
     plt.close()
-
 
     mlflow.tensorflow.log_model(
         model=som_v2,
