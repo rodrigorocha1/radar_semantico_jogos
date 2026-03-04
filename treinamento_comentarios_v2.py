@@ -104,7 +104,7 @@ colunas = int(math.sqrt(total_neuronios / raio))
 dimensao_som = embeddings_nomr.shape[1]
 dimensao = determinar_dimensao_ideal(base=embeddings_nomr)
 metrica: Literal["cosseno"] = "cosseno"
-sigma = max(linhas, colunas) / 2 # 5 até um
+sigma = 5.5 # 5 até um
 print(f'Sigma: {sigma}')
 batch_size = int(math.sqrt(total_neuronios))
 taxa_aprendizado = 0.5 / math.sqrt(batch_size)
