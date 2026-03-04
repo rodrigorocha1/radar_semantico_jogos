@@ -546,6 +546,65 @@ with mlflow.start_run(run_name='SOM Comentários') as run:
     mlflow.log_text(json_buffer.getvalue(), artifact_file='resultados/macrotemas.json')
     json_buffer.close()
 
+    # Gráfico macrotemas
+    # Dicionário final com macrotemas e coordenadas dos neurônios
+    macrotemas_coords = {}
+
+    for macro, neurons in macrotemas.items():
+        coords = []
+        for neuron in neurons:
+            # neuron é a tupla (linha, coluna)
+            coords.append({
+                "linha": neuron[0],
+                "coluna": neuron[1]
+            })
+        macrotemas_coords[macro] = coords
+
+    # Mostrar resultado
+    for k, v in macrotemas_coords.items():
+        print(f"Macrotema {k}: {v}")
+
+    # Salvar no MLflow
+    macrotemas_coords_json = {str(k): v for k, v in macrotemas_coords.items()}
+    json_buffer = io.StringIO()
+    json.dump(macrotemas_coords_json, json_buffer, indent=4, ensure_ascii=False)
+    json_buffer.seek(0)
+    mlflow.log_text(json_buffer.getvalue(), artifact_file='resultados/macrotemas_coords.json')
+    json_buffer.close()
+
+    # Criar matriz do SOM para plotagem (linhas x colunas)
+    mapa_macrotema = np.full((som_v2.linhas, som_v2.colunas), -1, dtype=int)
+
+    # Preencher matriz com o índice do macrotema de cada neurônio
+    for macro, neurons in macrotemas_coords.items():
+        for neuron in neurons:
+            linha = neuron["linha"]
+            coluna = neuron["coluna"]
+            mapa_macrotema[linha, coluna] = macro
+
+    # Plot
+    plt.figure(figsize=(10, 8))
+    cmap = sns.color_palette("tab20", n_colors=len(macrotemas_coords))
+    sns.heatmap(
+        mapa_macrotema,
+        annot=True,
+        fmt="d",
+        cmap=cmap,
+        cbar=True,
+        linewidths=0.5,
+        linecolor="gray"
+    )
+    plt.title("Mapa SOM com Macrotemas")
+    plt.xlabel("Colunas SOM")
+    plt.ylabel("Linhas SOM")
+    plt.gca().invert_yaxis()  # inverter eixo y para coincidir com SOM
+    plt.tight_layout()
+
+    # Log no MLflow
+    mlflow.log_figure(plt.gcf(), 'fig/som_macrotemas.png')
+    plt.close()
+
+
     mlflow.tensorflow.log_model(
         model=som_v2,
         name="som_model",
