@@ -108,7 +108,7 @@ sigma = 1
 batch_size = int(math.sqrt(total_neuronios))
 taxa_aprendizado = 0.5 / math.sqrt(batch_size)
 epocas = max(50, int((500 * linhas * colunas * batch_size) / dataframe_comentarios.shape[0]))
-epocas = 5
+
 random_state = 42
 
 som_v2 = SOMV2(
