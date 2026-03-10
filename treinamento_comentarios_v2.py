@@ -108,6 +108,7 @@ sigma = 5.5 # 5 até um
 print(f'Sigma: {sigma}')
 batch_size = int(math.sqrt(total_neuronios))
 taxa_aprendizado = 0.5 / math.sqrt(batch_size)
+
 epocas = max(50, int((500 * linhas * colunas * batch_size) / dataframe_comentarios.shape[0]))
 
 random_state = 42
