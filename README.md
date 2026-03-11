@@ -143,7 +143,7 @@ Aqui, os comentários são majoritariamente em português, focados em interaçõ
 
 ## U-matrix
 
-
+![u_matrix](https://raw.githubusercontent.com/rodrigorocha1/radar_semantico_jogos/refs/heads/master/img/u_matrix.png)
 
 ## Regiões de Comportamento na U-Matrix
 
